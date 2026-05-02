@@ -10,80 +10,131 @@
   <body>
     <main class="trainer-shell">
       <header class="trainer-header">
-        <div>
-          <h1>门窗知识库训练台</h1>
-          <p>独立维护门窗、铝材、工艺、材料知识，再同步给客服悬浮工具使用。</p>
+        <div class="brand">
+          <img src="/static/assets/favicon.svg" width="32" height="32" />
+          <div>
+            <h1>门窗知识库训练台</h1>
+            <p>基于 Gemini 的 RAG 智能闭环系统</p>
+          </div>
         </div>
-        <nav>
-          <a href="/overlay">客服小窗</a>
-          <a href="/">完整工作台</a>
+        <nav class="main-nav">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="learning">待审核 (学习队列)</button>
+            <button class="tab-btn" data-tab="kb">活跃库 (知识编辑)</button>
+            <button class="tab-btn" data-tab="tools">维护 (备份/导入)</button>
+          </div>
+          <div class="external-links">
+            <a href="/overlay" target="_blank" class="secondary">打开悬浮窗 ↗</a>
+          </div>
         </nav>
       </header>
 
-      <section class="trainer-grid">
-        <aside class="entry-list">
-          <div class="section-head">
-            <h2>知识条目</h2>
-            <span id="entryCount">0 条</span>
-          </div>
-          <div class="safety-box">
-            <strong>安全状态</strong>
-            <p id="kbStatus">读取中</p>
-            <button id="backupBtn">立即备份</button>
-            <button id="githubBackupBtn">生成 GitHub 备份仓库</button>
-            <p id="githubStatus">Git 归档未检测</p>
-          </div>
-          <div id="entryList"></div>
-        </aside>
-
-        <section class="editor">
-          <div class="section-head">
-            <h2>训练数据</h2>
-            <span id="saveStatus">未保存</span>
-          </div>
-          <div class="form-grid">
-            <label>条目 ID<input id="entryId" placeholder="glass-noise-street" /></label>
-            <label>标题<input id="entryTitle" placeholder="临街隔音玻璃选择" /></label>
-            <label class="wide">标签<input id="entryTags" placeholder="玻璃, 隔音, 临街, 夹胶玻璃" /></label>
-            <label class="wide">图片路径<input id="entryImage" placeholder="/static/assets/glass.svg" /></label>
-            <label class="wide">知识内容<textarea id="entryContent" placeholder="写清楚材料、工艺、适用场景、不能承诺的边界。"></textarea></label>
-            <label class="wide">建议回复<textarea id="entryReply" placeholder="给客服可直接参考的话术。"></textarea></label>
-          </div>
-          <div class="action-row">
-            <button id="newBtn">新建</button>
-            <button id="saveBtn">保存训练数据</button>
-            <button id="exportBtn">导出 JSON</button>
-          </div>
-          <label class="import-box">
-            批量导入 JSON
-            <textarea id="importJson" placeholder='{"entries":[{"id":"...","title":"...","content":"...","tags":["..."],"reply_templates":["..."]}]}'></textarea>
-          </label>
-          <div class="action-row">
-            <button id="importBtn">导入并训练</button>
-          </div>
-        </section>
-
-        <aside class="tester">
-          <div class="section-head">
-            <h2>检索测试</h2>
-            <span id="testStatus">待测试</span>
-          </div>
-          <textarea id="testQuery">客户：我家靠马路，系统窗玻璃怎么选才隔音？</textarea>
-          <button id="testBtn">测试命中</button>
-          <div id="testResults" class="results"></div>
-          <div class="section-head learning-head">
-            <h2>自主学习队列</h2>
-            <span id="learningStatus">待加载</span>
-          </div>
-          <div id="learningList" class="results"></div>
-          <div class="section-head learning-head">
-            <h2>采集与蒸馏</h2>
-            <span id="interactionStatus">待加载</span>
-          </div>
-          <button id="exportDistillBtn">导出蒸馏数据</button>
-          <div id="interactionList" class="results"></div>
-        </aside>
+      <!-- 1. 学习队列页面 (核心工作流) -->
+      <section id="tab-learning" class="tab-content active">
+        <div class="trainer-grid-two">
+          <aside class="queue-list">
+            <div class="section-head">
+              <h2>待审核候选</h2>
+              <span id="learningStatus">读取中</span>
+            </div>
+            <div id="learningList" class="results scrollable"></div>
+          </aside>
+          
+          <section class="review-focus">
+            <div id="reviewPlaceholder" class="placeholder-msg">请从左侧选择一条“候选知识点”进行审核</div>
+            <div id="reviewEditor" class="editor hidden">
+                <div class="section-head">
+                  <h2>AI 建议详情</h2>
+                  <div class="action-row">
+                    <button id="rejectBtn" class="danger">拒绝</button>
+                    <button id="approveBtn" class="success">采纳进库</button>
+                  </div>
+                </div>
+                <div class="source-bubble">
+                  <strong>用户原文：</strong>
+                  <p id="sourceText"></p>
+                  <small id="learningReason"></small>
+                </div>
+                <div class="form-grid">
+                  <label>标题<input id="revTitle" /></label>
+                  <label class="wide">标签 (逗号分隔)<input id="revTags" /></label>
+                  <label class="wide">知识内容<textarea id="revContent"></textarea></label>
+                  <label class="wide">回复话术建议<textarea id="revReply"></textarea></label>
+                </div>
+            </div>
+          </section>
+        </div>
       </section>
+
+      <!-- 2. 活跃知识库编辑 -->
+      <section id="tab-kb" class="tab-content">
+        <div class="trainer-grid">
+          <aside class="entry-list scrollable">
+            <div class="section-head">
+              <h2>所有条目</h2>
+              <span id="entryCount">0 条</span>
+            </div>
+            <div id="entryList"></div>
+          </aside>
+          <section class="editor">
+            <div class="section-head">
+              <h2>知识编辑</h2>
+              <span id="saveStatus">就绪</span>
+            </div>
+            <div class="form-grid">
+              <label>条目 ID<input id="entryId" readonly/></label>
+              <label>标题<input id="entryTitle" /></label>
+              <label class="wide">标签<input id="entryTags" /></label>
+              <label class="wide">知识内容<textarea id="entryContent"></textarea></label>
+              <label class="wide">回复模板<textarea id="entryReply"></textarea></label>
+            </div>
+            <div class="action-row">
+              <button id="newBtn">新建</button>
+              <button id="saveBtn" class="success">保存更改</button>
+            </div>
+          </section>
+          <aside class="tester">
+            <div class="section-head"><h2>检索测试</h2></div>
+            <textarea id="testQuery" placeholder="输入客户问题测试命中情况..."></textarea>
+            <button id="testBtn">测试 RAG 命中</button>
+            <div id="testResults" class="results"></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 3. 系统工具 -->
+      <section id="tab-tools" class="tab-content">
+        <div class="tools-grid">
+            <div class="tool-card">
+                <h3>数据备份</h3>
+                <p id="kbStatus">正在检查本地存储...</p>
+                <div class="action-row">
+                    <button id="backupBtn">本地备份</button>
+                    <button id="githubBackupBtn">GitHub 归档</button>
+                </div>
+                <p id="githubStatus" class="status-text"></p>
+            </div>
+            <div class="tool-card">
+                <h3>批量操作</h3>
+                <textarea id="importJson" placeholder="粘贴 JSON 数据进行导入..."></textarea>
+                <div class="action-row">
+                    <button id="importBtn">导入训练集</button>
+                    <button id="exportBtn" class="secondary">导出完整库</button>
+                </div>
+            </div>
+            <div class="tool-card">
+                <h3>采集与蒸馏</h3>
+                <div class="url-harvest-box">
+                    <input id="harvestUrl" placeholder="粘贴分享链接 (如小红书)..." />
+                    <button id="harvestBtn">一键采集评论</button>
+                </div>
+                <p id="interactionStatus">统计中...</p>
+                <button id="exportDistillBtn">导出对话蒸馏数据</button>
+                <div id="interactionList" class="compact-list scrollable"></div>
+            </div>
+        </div>
+      </section>
+
     </main>
     <script src="/static/kb_trainer.js"></script>
   </body>

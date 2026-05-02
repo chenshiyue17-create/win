@@ -122,7 +122,9 @@ class AssistantEngine:
         
         if self.llm_config and self.llm_config.api_key:
             try:
-                interaction_analysis, suggested_reply = self._analyze_with_gemini(message, context, matches, warnings)
+                interaction_analysis, suggested_reply = self._analyze_with_gemini(
+                    message, context, matches, warnings, image_bytes=request.image_bytes
+                )
             except Exception as exc:
                 LOGGER.warning(f"Gemini 分析失败，降级到本地逻辑: {exc}")
 
@@ -145,47 +147,64 @@ class AssistantEngine:
             ]
         )
 
-    def _analyze_with_gemini(self, message: MessageInput, context: list[MessageInput], matches: list, warnings: list[str]) -> tuple[str, str]:
-        """利用 Gemini 结合本地知识库生成回复"""
+    def _analyze_with_gemini(self, message: MessageInput, context: list[MessageInput], matches: list, warnings: list[str], image_bytes: bytes | None = None) -> tuple[str, str]:
+        """利用 Gemini 结合本地知识库和图片内容生成回复"""
+        import base64
+        
         context_str = "\n".join([f"{m.sender}: {m.text}" for m in context])
         kb_context = ""
         if matches:
             kb_context = "\n\n".join([f"【知识点: {m.entry.title}】\n内容: {m.entry.content}\n建议话术参考: {', '.join(m.entry.reply_templates)}" for m in matches])
 
-        prompt = f"""你是一个专业的门窗售前专家。请根据以下信息，为客服生成回复建议。
+        prompt = f"""你是一个顶级的门窗技术专家，擅长通过型材样角截面识别品牌和性能。
 
-1. 本地知识库匹配（作为核心依据）：
-{kb_context or "未匹配到特定知识点，请根据行业通用经验回答。"}
+1. 任务要求：
+- 如果提供了图片，请仔细观察型材的“截面结构”。
+- 分析：腔体数量、隔热条形状(PA66)、密封道数、型材壁厚感官。
+- 识别品牌：尝试识别这是否为 旭格、维诺斯盾、轩尼斯、希美克、派雅、皇派、新豪轩等知名品牌或其仿品。
+- 每个品牌的腔体槽位和等温线设计是独特的，请指出其结构优劣。
 
-2. 历史对话上下文：
+2. 本地知识库参考：
+{kb_context or "未匹配到特定本地知识，请基于您的行业大脑回答。"}
+
+3. 对话上下文：
 {context_str}
 
-3. 客户当前问题：
-{message.text}
+4. 客户当前问题：{message.text}
 
-{'4. 注意：该输入触发了安全风险警告：' + ', '.join(warnings) if warnings else ''}
+{'5. 风险警告：' + ', '.join(warnings) if warnings else ''}
 
-请输出 JSON 格式，包含以下两个字段：
-- interaction_analysis: 对当前对话阶段的深度分析（如客户意图、沟通要点、追问建议，50-100字）。
-- suggested_reply: 建议客服直接发送给客户的一段回复话术（专业、真诚、引导决策）。
-
-注意：只需输出 JSON 内容。
+请输出 JSON：
+- interaction_analysis: 深度结构分析+品牌识别结论（如果是样角，必须指出结构特征）。
+- suggested_reply: 给客户的专业建议。
 """
+        messages = [
+            {"role": "system", "content": "你是一个严谨的门窗样角识别专家。"},
+        ]
+        
+        user_content = [{"type": "text", "text": prompt}]
+        
+        if image_bytes:
+            b64_image = base64.b64encode(image_bytes).decode("utf-8")
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{b64_image}"}
+            })
+            
+        messages.append({"role": "user", "content": user_content})
+
         headers = {
             "Authorization": f"Bearer {self.llm_config.api_key}",
             "Content-Type": "application/json"
         }
         payload = {
             "model": self.llm_config.model,
-            "messages": [
-                {"role": "system", "content": "你是一个严谨的门窗售前助手。"},
-                {"role": "user", "content": prompt}
-            ],
+            "messages": messages,
             "temperature": self.llm_config.temperature,
             "response_format": {"type": "json_object"}
         }
         
-        with httpx.Client(timeout=15.0) as client:
+        with httpx.Client(timeout=25.0) as client:
             resp = client.post(f"{self.llm_config.base_url}/chat/completions", json=payload, headers=headers)
             resp.raise_for_status()
             data = resp.json()

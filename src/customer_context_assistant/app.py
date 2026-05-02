@@ -32,6 +32,7 @@ from customer_context_assistant.models import (
     RecognitionResponse,
 )
 from customer_context_assistant.recognizer import latest_customer_messages, recognize_image_payload, recognize_text_payload
+from customer_context_assistant.web_harvester import harvest_comments_from_url
 
 
 LOGGER = logging.getLogger(__name__)
@@ -147,6 +148,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.post("/api/harvest-url", response_model=RecognitionResponse)
+    async def harvest_url(payload: dict) -> RecognitionResponse:
+        url = payload.get("url")
+        if not url:
+            raise HTTPException(status_code=400, detail="URL is required")
+        return await harvest_comments_from_url(url, settings.recognition.ocr_language)
+
     @app.post("/api/analyze", response_model=AnalyzeResponse)
     def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
         if not request.messages:
@@ -161,7 +169,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         candidates = []
         if request.learn:
             candidates = learning_queue.ingest_messages(target_messages, kb, source="analyze")
-        response = engine.analyze(AnalyzeRequest(messages=analysis_messages, include_safety=request.include_safety, session_id=session_id))
+        response = engine.analyze(AnalyzeRequest(
+            messages=analysis_messages, 
+            include_safety=request.include_safety, 
+            session_id=session_id,
+            image_bytes=request.image_bytes
+        ))
         conversation_store.append_messages(session_id, target_messages)
         interaction_store.append(
             source="api_analyze",

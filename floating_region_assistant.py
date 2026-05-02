@@ -101,7 +101,12 @@ class LocalAssistant:
             return recognized.text, AnalyzeResponse(hints=[]), recognized.warnings, safe_session_id
         analysis_messages = self.conversation_store.recent_context(safe_session_id, limit=8) + target_messages
         candidates = self.learning_queue.ingest_messages(target_messages, self.kb, source="floating_region")
-        response = self.engine.analyze(AnalyzeRequest(messages=analysis_messages, include_safety=True, session_id=safe_session_id))
+        response = self.engine.analyze(AnalyzeRequest(
+            messages=analysis_messages, 
+            include_safety=True, 
+            session_id=safe_session_id,
+            image_bytes=data
+        ))
         self.conversation_store.append_messages(safe_session_id, target_messages)
         self.interaction_store.append(
             source="floating_region",
@@ -906,7 +911,44 @@ class FloatingAssistantApp:
         self.root.mainloop()
 
 
+def force_cleanup_environment(port: int = 8788) -> None:
+    """彻底强制清理旧进程、端口占用和残留锁文件"""
+    import subprocess
+    import os
+    import signal
+    
+    # 1. 强力清理 /tmp 锁
+    for lock in ["/tmp/menchuang-tool.lock", "/tmp/customer-assistant.lock"]:
+        if os.path.exists(lock):
+            try:
+                if os.path.isdir(lock):
+                    import shutil
+                    shutil.rmtree(lock, ignore_errors=True)
+                else:
+                    os.remove(lock)
+            except: pass
+
+    # 2. 释放 8788 端口 (杀死任何正在占用的进程)
+    try:
+        pids = subprocess.check_output(["lsof", "-t", f"-i:{port}"]).decode().strip().split("\n")
+        for pid in pids:
+            if pid and int(pid) != os.getpid():
+                os.kill(int(pid), signal.SIGKILL)
+    except: pass
+
+    # 3. 杀死所有相关的 Python 助手进程
+    try:
+        current_pid = os.getpid()
+        pids = subprocess.check_output(["pgrep", "-f", "floating_region_assistant.py"]).decode().strip().split("\n")
+        for pid in pids:
+            if pid and int(pid) != current_pid:
+                os.kill(int(pid), signal.SIGKILL)
+    except: pass
+
+
 def main() -> None:
+    # 启动前自清理，防止任何形式的冲突
+    force_cleanup_environment()
     FloatingAssistantApp().run()
 
 

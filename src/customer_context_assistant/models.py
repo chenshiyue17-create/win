@@ -95,6 +95,7 @@ class AnalyzeRequest(BaseModel):
     include_safety: bool = True
     learn: bool = False
     session_id: str = "default"
+    image_bytes: Optional[bytes] = None
 
 
 class Hint(BaseModel):
