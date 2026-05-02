@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>门窗售前顾问助手</title>
+    <link rel="icon" href="/static/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">C</div>
+          <div>
+            <h1>门窗售前顾问助手</h1>
+            <p>门窗知识库 · 客户消息识别 · 售前话术提示</p>
+          </div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>窗口识别</h2>
+            <span id="recognitionStatus">待输入</span>
+          </div>
+          <textarea id="windowText" spellcheck="false">客户：我家临街，想换断桥铝或者系统窗，主要想隔音好一点。
+客服：您好，我先了解一下您家窗户情况。
+客户：铝材壁厚和玻璃怎么选？大概多少钱一平方？</textarea>
+          <div class="actions">
+            <button id="recognizeTextBtn">识别文本</button>
+            <label class="file-button">
+              上传截图
+              <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+            </label>
+          </div>
+          <p class="hint-line" id="recognitionWarnings"></p>
+        </section>
+
+        <section class="panel kb-panel">
+          <div class="panel-head">
+            <h2>图文知识库</h2>
+            <span id="kbCount">0 条</span>
+          </div>
+          <div id="kbList" class="kb-list"></div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <h2>会话工作台</h2>
+            <p>像网页翻译一样，在每条门窗售前咨询旁显示专业提示。</p>
+          </div>
+          <div class="top-actions">
+            <a href="/kb-trainer">训练知识库</a>
+            <button id="analyzeBtn">生成旁边提示</button>
+          </div>
+        </header>
+
+        <div class="chat-layout">
+          <div id="messageList" class="message-list"></div>
+          <aside id="hintRail" class="hint-rail">
+            <div class="empty-state">识别窗口内容后，提示会贴在对应消息旁边。</div>
+          </aside>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

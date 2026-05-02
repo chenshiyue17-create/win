@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>门窗知识库训练台</title>
+    <link rel="icon" href="/static/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/kb_trainer.css" />
+  </head>
+  <body>
+    <main class="trainer-shell">
+      <header class="trainer-header">
+        <div>
+          <h1>门窗知识库训练台</h1>
+          <p>独立维护门窗、铝材、工艺、材料知识，再同步给客服悬浮工具使用。</p>
+        </div>
+        <nav>
+          <a href="/overlay">客服小窗</a>
+          <a href="/">完整工作台</a>
+        </nav>
+      </header>
+
+      <section class="trainer-grid">
+        <aside class="entry-list">
+          <div class="section-head">
+            <h2>知识条目</h2>
+            <span id="entryCount">0 条</span>
+          </div>
+          <div class="safety-box">
+            <strong>安全状态</strong>
+            <p id="kbStatus">读取中</p>
+            <button id="backupBtn">立即备份</button>
+            <button id="githubBackupBtn">生成 GitHub 备份仓库</button>
+            <p id="githubStatus">Git 归档未检测</p>
+          </div>
+          <div id="entryList"></div>
+        </aside>
+
+        <section class="editor">
+          <div class="section-head">
+            <h2>训练数据</h2>
+            <span id="saveStatus">未保存</span>
+          </div>
+          <div class="form-grid">
+            <label>条目 ID<input id="entryId" placeholder="glass-noise-street" /></label>
+            <label>标题<input id="entryTitle" placeholder="临街隔音玻璃选择" /></label>
+            <label class="wide">标签<input id="entryTags" placeholder="玻璃, 隔音, 临街, 夹胶玻璃" /></label>
+            <label class="wide">图片路径<input id="entryImage" placeholder="/static/assets/glass.svg" /></label>
+            <label class="wide">知识内容<textarea id="entryContent" placeholder="写清楚材料、工艺、适用场景、不能承诺的边界。"></textarea></label>
+            <label class="wide">建议回复<textarea id="entryReply" placeholder="给客服可直接参考的话术。"></textarea></label>
+          </div>
+          <div class="action-row">
+            <button id="newBtn">新建</button>
+            <button id="saveBtn">保存训练数据</button>
+            <button id="exportBtn">导出 JSON</button>
+          </div>
+          <label class="import-box">
+            批量导入 JSON
+            <textarea id="importJson" placeholder='{"entries":[{"id":"...","title":"...","content":"...","tags":["..."],"reply_templates":["..."]}]}'></textarea>
+          </label>
+          <div class="action-row">
+            <button id="importBtn">导入并训练</button>
+          </div>
+        </section>
+
+        <aside class="tester">
+          <div class="section-head">
+            <h2>检索测试</h2>
+            <span id="testStatus">待测试</span>
+          </div>
+          <textarea id="testQuery">客户：我家靠马路，系统窗玻璃怎么选才隔音？</textarea>
+          <button id="testBtn">测试命中</button>
+          <div id="testResults" class="results"></div>
+          <div class="section-head learning-head">
+            <h2>自主学习队列</h2>
+            <span id="learningStatus">待加载</span>
+          </div>
+          <div id="learningList" class="results"></div>
+          <div class="section-head learning-head">
+            <h2>采集与蒸馏</h2>
+            <span id="interactionStatus">待加载</span>
+          </div>
+          <button id="exportDistillBtn">导出蒸馏数据</button>
+          <div id="interactionList" class="results"></div>
+        </aside>
+      </section>
+    </main>
+    <script src="/static/kb_trainer.js"></script>
+  </body>
+</html>

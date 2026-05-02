@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+venv/
+ENV/
+env/
+
+# Config & Secrets
+config.yaml
+.env
+
+# Data & Logs
+data/
+logs/
+output/
+dist/
+build/
+*.pid
+.pytest_cache/
+
+# macOS
+.DS_Store

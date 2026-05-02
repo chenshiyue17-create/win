@@ -1,0 +1,33 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - strong [ref=e5]: 客服悬浮提示
+      - generic [ref=e6]: 已生成 2 条提示
+    - generic [ref=e7]:
+      - button "−" [ref=e8] [cursor=pointer]
+      - link "↗" [ref=e9] [cursor=pointer]:
+        - /url: /
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - textbox [ref=e12]: 客户：物流一直没更新，今天不到我想退款 客服：我先帮您查看 客户：那优惠价还能保价吗？
+      - generic [ref=e13]:
+        - button "读取剪贴板" [ref=e14] [cursor=pointer]
+        - button "生成提示" [ref=e15] [cursor=pointer]
+        - generic [ref=e16] [cursor=pointer]: 截图
+    - generic [ref=e17]:
+      - article [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: 退款/退货
+          - generic [ref=e21]: 50%
+        - paragraph [ref=e22]: 命中知识库：物流延迟处理
+        - generic [ref=e23]: 我先帮您查一下承运商的最新轨迹。如果 48 小时内仍没有更新，我会继续为您登记物流异常并同步处理进度。
+        - generic [ref=e24]:
+          - generic [ref=e25]: 物流延迟处理
+          - generic [ref=e26]: 七天无理由退货
+      - article [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: 价格/优惠
+          - generic [ref=e30]: 75%
+        - paragraph [ref=e31]: 命中知识库：优惠价与保价
+        - generic [ref=e32]: 我理解您关注价格。我先帮您核对当前活动和订单时间，如果符合保价规则，会继续为您登记处理。
+        - generic [ref=e34]: 优惠价与保价

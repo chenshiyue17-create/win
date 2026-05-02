@@ -1,0 +1,159 @@
+{
+  "entries": [
+    {
+      "id": "psychology-consultative-selling",
+      "title": "顾问式销售：先诊断再推荐",
+      "content": "顾问式销售的核心不是先推产品，而是先理解客户挑战、场景、限制和价值判断，再把门窗配置映射到客户问题。门窗售前要先问清楚居住场景、楼层、噪音源、朝向、西晒、预算、物业限制和安装边界，再推荐系统窗、玻璃、型材、五金和工艺。互动分析时要判断客户处于探索、比较、砍价、担忧风险还是准备下单阶段。",
+      "tags": ["顾问式销售", "需求诊断", "客户阶段", "售前沟通", "解决方案"],
+      "reply_templates": [
+        "我先不直接给您推配置，先把使用场景确认清楚：楼层、是否临街或西晒、窗洞大概尺寸、想重点解决隔音/隔热/漏风哪个问题，以及预算范围。这样后面给您的方案才不会虚。"
+      ],
+      "links": [
+        {
+          "label": "Salesforce Consultative Sales",
+          "url": "https://www.salesforce.com/blog/consultative-sales-approach/",
+          "note": "顾问式销售强调理解客户挑战并推荐解决方案。"
+        },
+        {
+          "label": "Salesforce Solution Selling",
+          "url": "https://www.salesforce.com/blog/what-is-solution-selling/",
+          "note": "解决方案销售强调围绕客户痛点做定制推荐。"
+        }
+      ],
+      "tables": [
+        {
+          "title": "客户阶段判断",
+          "headers": ["客户信号", "互动分析", "下一步"],
+          "rows": [
+            ["问多少钱", "可能在预算筛选，也可能缺少尺寸信息", "先补尺寸、楼层、开启方式，再给区间"],
+            ["问隔音好不好", "关注结果和风险", "确认噪音源、楼层、窗型和玻璃组合"],
+            ["问和别人家区别", "处于比较阶段", "用材料、工艺、安装、售后边界解释差异"],
+            ["说太贵", "价值感或预算不匹配", "拆解配置差异，给可降配选项"]
+          ]
+        }
+      ],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": "2026-05-02",
+        "updated_by": "web-research",
+        "change_note": "联网整理顾问式销售知识，供互动分析使用。"
+      }
+    },
+    {
+      "id": "psychology-principled-negotiation",
+      "title": "原则谈判：人和问题分开，围绕利益和客观标准",
+      "content": "原则谈判强调把情绪和人际关系与问题本身分开，关注利益而不是表面立场，寻找双方都能接受的选项，并用客观标准判断。门窗售前遇到砍价、质疑、比较、担心踩坑时，不要硬怼客户立场，要把问题转成客观维度：型材、玻璃、五金、安装、防水、售后、测量条件和预算边界。",
+      "tags": ["谈判", "原则谈判", "异议处理", "客观标准", "利益"],
+      "reply_templates": [
+        "您担心价格这个点很正常。我们可以不先看单价，先把影响价格和效果的几个客观项拆开：型材结构、玻璃配置、五金、安装收口、防水和售后。这样您比较不同方案时会更清楚。"
+      ],
+      "links": [
+        {
+          "label": "Harvard PON Principled Negotiation",
+          "url": "https://www.pon.harvard.edu/daily/negotiation-skills-daily/principled-negotiation-focus-interests-create-value/",
+          "note": "原则谈判：关注利益、客观标准和共同创造价值。"
+        },
+        {
+          "label": "Harvard PON BATNA",
+          "url": "https://www.pon.harvard.edu/daily/batna/translate-your-batna-to-the-current-deal/",
+          "note": "BATNA 用于判断谈判底线和替代方案。"
+        }
+      ],
+      "tables": [
+        {
+          "title": "门窗异议转译",
+          "headers": ["客户表面话术", "真实利益", "建议转译"],
+          "rows": [
+            ["太贵了", "预算、怕被坑、价值不清", "拆配置差异和可降配选项"],
+            ["能不能保证绝对隔音", "害怕效果不达预期", "说明影响因素和可验证方案，不绝对承诺"],
+            ["别人家便宜很多", "需要比较依据", "按客观标准拆材料、工艺、安装、售后"]
+          ]
+        }
+      ],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": "2026-05-02",
+        "updated_by": "web-research",
+        "change_note": "联网整理原则谈判知识，供异议分析使用。"
+      }
+    },
+    {
+      "id": "psychology-ethical-influence",
+      "title": "伦理影响力：互惠、社会证明、权威、稀缺要有边界",
+      "content": "影响力原则可用于建立信任，但不能变成诱导或夸大。门窗售前可用互惠提供真实选购清单，用权威展示标准、检测、工艺资料，用社会证明说明类似场景案例，用稀缺解释真实排产或活动边界。禁止制造虚假紧迫、虚假案例、虚假权威或绝对化承诺。",
+      "tags": ["影响力", "交易心理", "互惠", "社会证明", "权威", "稀缺", "信任"],
+      "reply_templates": [
+        "我可以先给您一个对比清单，您拿去看别家也能用：型材结构、玻璃配置、五金、密封、安装防水和售后范围。您按这几个点比较，就不容易只被单价带着走。"
+      ],
+      "links": [
+        {
+          "label": "Association for Psychological Science on Cialdini",
+          "url": "https://www.psychologicalscience.org/observer/universal-principles-of-influence",
+          "note": "Cialdini 影响力原则的心理学来源。"
+        },
+        {
+          "label": "Influence at Work principles",
+          "url": "https://www.influenceatwork.com/6-principles-of-persuasion/",
+          "note": "互惠、稀缺、权威、社会证明等原则。"
+        }
+      ],
+      "tables": [
+        {
+          "title": "影响力原则的合规用法",
+          "headers": ["原则", "可用方式", "禁止方式"],
+          "rows": [
+            ["互惠", "先给真实选购清单", "用小恩小惠逼迫成交"],
+            ["社会证明", "讲同小区/同场景真实案例", "编造客户案例"],
+            ["权威", "引用标准、检测、工艺资料", "假装官方认证"],
+            ["稀缺", "说明真实排产和活动截止", "虚构最后一天"]
+          ]
+        }
+      ],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": "2026-05-02",
+        "updated_by": "web-research",
+        "change_note": "联网整理伦理影响力原则，强调辅助沟通边界。"
+      }
+    },
+    {
+      "id": "psychology-sales-qualification",
+      "title": "销售资格判断：预算、决策、需求、时间线",
+      "content": "门窗售前需要判断客户是否只是询价、正在比较、准备测量、还是已接近成交。常用资格维度包括预算、决策人、真实需求和时间线。不要把所有客户都当成立刻下单；对早期客户先教育和诊断，对准备下单客户推进测量、方案、报价和安装边界。",
+      "tags": ["销售资格", "预算", "决策人", "时间线", "客户进度", "BANT"],
+      "reply_templates": [
+        "我先帮您判断适合走哪个方案：这个窗是近期就准备做，还是先了解预算？家里谁主要决定配置？如果方便，再给我大概尺寸和楼层，我可以先给您一个更接近实际的区间。"
+      ],
+      "links": [
+        {
+          "label": "HubSpot Sales Cycle",
+          "url": "https://www.hubspot.com/glossary/sales-cycle",
+          "note": "销售周期和客户阶段管理。"
+        },
+        {
+          "label": "HubSpot Sales Qualification",
+          "url": "https://blog.hubspot.com/sales/how-to-ask-common-sales-questions-the-right-wrong-way",
+          "note": "销售资格判断和预算、权责、需求、时间线。"
+        }
+      ],
+      "tables": [
+        {
+          "title": "客户进度判断",
+          "headers": ["维度", "要判断的问题", "门窗追问"],
+          "rows": [
+            ["预算", "是否有可接受区间", "预算大概是经济型、品质型还是高性能？"],
+            ["决策", "谁影响成交", "家里主要是谁看隔音、安全、价格？"],
+            ["需求", "真实痛点", "是隔音、隔热、漏风、颜值还是安全？"],
+            ["时间线", "何时施工", "是近期装修、封阳台，还是先了解？"]
+          ]
+        }
+      ],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": "2026-05-02",
+        "updated_by": "web-research",
+        "change_note": "联网整理销售资格判断知识，供客户进度总结使用。"
+      }
+    }
+  ]
+}

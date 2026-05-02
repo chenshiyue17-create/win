@@ -1,0 +1,10 @@
+[project]
+name = "customer-context-assistant"
+version = "0.1.0"
+description = "Local customer support side-hint assistant with visual knowledge base and window text recognition."
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

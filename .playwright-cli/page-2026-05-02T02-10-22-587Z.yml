@@ -1,0 +1,37 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - strong [ref=e5]: 门窗售前提示
+      - generic [ref=e6]: 已生成 2 条提示
+    - generic [ref=e7]:
+      - button "−" [ref=e8] [cursor=pointer]
+      - link "↗" [ref=e9] [cursor=pointer]:
+        - /url: /
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - textbox [ref=e12]: 客户：我家临街，想换系统窗，主要想隔音好一点 客服：我先了解一下您家窗户情况 客户：铝材壁厚和玻璃怎么选？大概多少钱一平方？
+      - generic [ref=e13]:
+        - button "读取剪贴板" [ref=e14] [cursor=pointer]
+        - button "生成提示" [ref=e15] [cursor=pointer]
+        - generic [ref=e16] [cursor=pointer]: 截图
+    - generic [ref=e17]:
+      - article [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: 窗型选择
+          - generic [ref=e21]: 50%
+        - paragraph [ref=e22]: 命中知识库：系统窗与断桥铝选择
+        - generic [ref=e23]: 您可以先看使用场景：如果是临街、卧室或封阳台，更建议按整窗性能选系统窗；如果预算更敏感，也可以用断桥铝方案，但要重点看型材结构、玻璃、五金和安装。
+        - generic [ref=e24]:
+          - generic [ref=e25]: 系统窗与断桥铝选择
+          - generic [ref=e26]: 玻璃配置
+          - generic [ref=e27]: 五金与密封
+      - article [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: 铝材/型材
+          - generic [ref=e31]: 96%
+        - paragraph [ref=e32]: 命中知识库：铝材型材与壁厚
+        - generic [ref=e33]: 铝材建议不要只看厚度。您家窗户大概多宽多高、楼层高不高、是平开还是推拉？这些会影响型材壁厚、腔体和五金配置。
+        - generic [ref=e34]:
+          - generic [ref=e35]: 铝材型材与壁厚
+          - generic [ref=e36]: 玻璃配置
+          - generic [ref=e37]: 系统窗与断桥铝选择

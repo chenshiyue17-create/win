@@ -1,0 +1,101 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "门窗知识库训练台" [level=1] [ref=e5]
+      - paragraph [ref=e6]: 独立维护门窗、铝材、工艺、材料知识，再同步给客服悬浮工具使用。
+    - navigation [ref=e7]:
+      - link "客服小窗" [ref=e8] [cursor=pointer]:
+        - /url: /overlay
+      - link "完整工作台" [ref=e9] [cursor=pointer]:
+        - /url: /
+  - generic [ref=e10]:
+    - complementary [ref=e11]:
+      - generic [ref=e12]:
+        - heading "知识条目" [level=2] [ref=e13]
+        - generic [ref=e14]: 6 条
+      - generic [ref=e15]:
+        - button "系统窗与断桥铝选择 系统窗 / 断桥铝 / 窗型 / 气密 / 水密" [ref=e16] [cursor=pointer]:
+          - strong [ref=e17]: 系统窗与断桥铝选择
+          - text: 系统窗 / 断桥铝 / 窗型 / 气密 / 水密
+        - button "铝材型材与壁厚 铝材 / 型材 / 壁厚 / 隔热条 / 腔体" [ref=e18] [cursor=pointer]:
+          - strong [ref=e19]: 铝材型材与壁厚
+          - text: 铝材 / 型材 / 壁厚 / 隔热条 / 腔体
+        - button "玻璃配置 玻璃 / 中空玻璃 / 夹胶玻璃 / Low-E / 隔音 / 隔热" [ref=e20] [cursor=pointer]:
+          - strong [ref=e21]: 玻璃配置
+          - text: 玻璃 / 中空玻璃 / 夹胶玻璃 / Low-E / 隔音 / 隔热
+        - button "五金与密封 五金 / 合页 / 执手 / 密封条 / 锁点 / 漏风" [ref=e22] [cursor=pointer]:
+          - strong [ref=e23]: 五金与密封
+          - text: 五金 / 合页 / 执手 / 密封条 / 锁点 / 漏风
+        - button "工艺与安装 工艺 / 安装 / 注胶 / 组角 / 打胶 / 防水 / 排水" [ref=e24] [cursor=pointer]:
+          - strong [ref=e25]: 工艺与安装
+          - text: 工艺 / 安装 / 注胶 / 组角 / 打胶 / 防水 / 排水
+        - button "测量报价前置问题 报价 / 测量 / 尺寸 / 预算 / 封阳台 / 拆旧" [ref=e26] [cursor=pointer]:
+          - strong [ref=e27]: 测量报价前置问题
+          - text: 报价 / 测量 / 尺寸 / 预算 / 封阳台 / 拆旧
+    - generic [ref=e28]:
+      - generic [ref=e29]:
+        - heading "训练数据" [level=2] [ref=e30]
+        - generic [ref=e31]: 未保存
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - text: 条目 ID
+          - textbox "条目 ID" [ref=e34]:
+            - /placeholder: glass-noise-street
+            - text: system-window-selection
+        - generic [ref=e35]:
+          - text: 标题
+          - textbox "标题" [ref=e36]:
+            - /placeholder: 临街隔音玻璃选择
+            - text: 系统窗与断桥铝选择
+        - generic [ref=e37]:
+          - text: 标签
+          - textbox "标签" [ref=e38]:
+            - /placeholder: 玻璃, 隔音, 临街, 夹胶玻璃
+            - text: 系统窗, 断桥铝, 窗型, 气密, 水密
+        - generic [ref=e39]:
+          - text: 图片路径
+          - textbox "图片路径" [ref=e40]:
+            - /placeholder: /static/assets/glass.svg
+            - text: /static/assets/window-system.svg
+        - generic [ref=e41]:
+          - text: 知识内容
+          - textbox "知识内容" [ref=e42]:
+            - /placeholder: 写清楚材料、工艺、适用场景、不能承诺的边界。
+            - text: 系统窗不是单看型材厚度，而是型材结构、玻璃、五金、密封、排水和安装共同组成的性能方案。断桥铝重点解释隔热条、腔体结构和整窗气密水密。
+        - generic [ref=e43]:
+          - text: 建议回复
+          - textbox "建议回复" [ref=e44]:
+            - /placeholder: 给客服可直接参考的话术。
+            - text: 您可以先看使用场景：如果是临街、卧室或封阳台，更建议按整窗性能选系统窗；如果预算更敏感，也可以用断桥铝方案，但要重点看型材结构、玻璃、五金和安装。
+      - generic [ref=e45]:
+        - button "新建" [ref=e46] [cursor=pointer]
+        - button "保存训练数据" [ref=e47] [cursor=pointer]
+        - button "导出 JSON" [ref=e48] [cursor=pointer]
+      - generic [ref=e49]:
+        - text: 批量导入 JSON
+        - textbox "批量导入 JSON" [ref=e50]:
+          - /placeholder: "{\"entries\":[{\"id\":\"...\",\"title\":\"...\",\"content\":\"...\",\"tags\":[\"...\"],\"reply_templates\":[\"...\"]}]}"
+      - button "导入并训练" [ref=e52] [cursor=pointer]
+    - complementary [ref=e53]:
+      - generic [ref=e54]:
+        - heading "检索测试" [level=2] [ref=e55]
+        - generic [ref=e56]: 命中 3 条
+      - textbox [ref=e57]: 客户：我家靠马路，系统窗玻璃怎么选才隔音？
+      - button "测试命中" [ref=e58] [cursor=pointer]
+      - generic [ref=e59]:
+        - article [ref=e60]:
+          - strong [ref=e61]: 玻璃配置 · 分数 10
+          - paragraph [ref=e62]: 玻璃配置影响隔音、隔热、安全和采光。常见方案包括双层中空、三玻两腔、夹胶中空、Low-E 中空。临街优先考虑夹胶或不同厚度组合，西晒可考虑 Low-E。
+          - generic [ref=e63]:
+            - generic [ref=e64]: 玻璃
+            - generic [ref=e65]: 隔音
+        - article [ref=e66]:
+          - strong [ref=e67]: 系统窗与断桥铝选择 · 分数 7
+          - paragraph [ref=e68]: 系统窗不是单看型材厚度，而是型材结构、玻璃、五金、密封、排水和安装共同组成的性能方案。断桥铝重点解释隔热条、腔体结构和整窗气密水密。
+          - generic [ref=e69]:
+            - generic [ref=e70]: 玻璃
+            - generic [ref=e71]: 系统窗
+        - article [ref=e72]:
+          - strong [ref=e73]: 五金与密封 · 分数 1
+          - paragraph [ref=e74]: 五金决定开合顺滑、承重和长期稳定；密封条、锁点数量和搭接结构影响气密、隔音和防漏风。大扇窗、落地窗要关注承重合页和执手锁点。
+          - generic [ref=e76]: 隔音

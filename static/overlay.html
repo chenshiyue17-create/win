@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>门窗售前悬浮提示</title>
+    <link rel="icon" href="/static/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/static/overlay.css" />
+  </head>
+  <body>
+    <main class="assistant-window" id="assistantWindow">
+      <header class="dragbar" id="dragbar">
+        <div>
+          <strong>门窗售前提示</strong>
+          <span id="statusText">就绪</span>
+        </div>
+        <div class="window-actions">
+          <button id="compactBtn" title="折叠/展开">−</button>
+          <a href="/kb-trainer" title="训练知识库">K</a>
+          <a href="/" title="打开完整工作台">↗</a>
+        </div>
+      </header>
+
+      <section class="body" id="windowBody">
+        <div class="input-zone">
+          <textarea id="inputText" spellcheck="false">客户：我家临街，想换系统窗，主要想隔音好一点
+客服：我先了解一下您家窗户情况
+客户：铝材壁厚和玻璃怎么选？大概多少钱一平方？</textarea>
+          <div class="toolbar">
+            <button id="pasteBtn">读取剪贴板</button>
+            <button id="analyzeBtn">生成提示</button>
+            <label>
+              截图
+              <input id="screenshotInput" type="file" accept="image/png,image/jpeg,image/webp" />
+            </label>
+          </div>
+        </div>
+
+        <div class="hint-stream" id="hintStream"></div>
+      </section>
+    </main>
+
+    <script src="/static/overlay.js"></script>
+  </body>
+</html>

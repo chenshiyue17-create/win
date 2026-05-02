@@ -1,0 +1,54 @@
+- main [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: C
+      - generic [ref=e6]:
+        - heading "客服侧边提示助手" [level=1] [ref=e7]
+        - paragraph [ref=e8]: 本地图文知识库 · 窗口内容识别 · 消息旁提示
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - heading "窗口识别" [level=2] [ref=e11]
+        - generic [ref=e12]: 识别中
+      - textbox [ref=e13]: 客户：我这个订单已经三天了，物流一直没更新，什么时候到？ 客服：您好，我先帮您看一下。 客户：如果今天还不到我想退款。
+      - generic [ref=e14]:
+        - button "识别文本" [ref=e15] [cursor=pointer]
+        - generic [ref=e16] [cursor=pointer]: 上传截图
+      - paragraph [ref=e17]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - heading "图文知识库" [level=2] [ref=e20]
+        - generic [ref=e21]: 5 条
+      - generic [ref=e22]:
+        - article [ref=e23]:
+          - img "七天无理由退货" [ref=e24]
+          - generic [ref=e25]:
+            - strong [ref=e26]: 七天无理由退货
+            - paragraph [ref=e27]: 退款 / 退货 / 七天 / 售后
+        - article [ref=e28]:
+          - img "物流延迟处理" [ref=e29]
+          - generic [ref=e30]:
+            - strong [ref=e31]: 物流延迟处理
+            - paragraph [ref=e32]: 物流 / 发货 / 快递 / 延迟 / 到货
+        - article [ref=e33]:
+          - img "发票信息修改" [ref=e34]
+          - generic [ref=e35]:
+            - strong [ref=e36]: 发票信息修改
+            - paragraph [ref=e37]: 发票 / 抬头 / 税号 / 报销
+        - article [ref=e38]:
+          - img "签收破损处理" [ref=e39]
+          - generic [ref=e40]:
+            - strong [ref=e41]: 签收破损处理
+            - paragraph [ref=e42]: 破损 / 坏了 / 售后 / 照片 / 外箱
+        - article [ref=e43]:
+          - img "优惠价与保价" [ref=e44]
+          - generic [ref=e45]:
+            - strong [ref=e46]: 优惠价与保价
+            - paragraph [ref=e47]: 优惠 / 降价 / 保价 / 会员 / 价格
+  - generic [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - heading "会话工作台" [level=2] [ref=e51]
+        - paragraph [ref=e52]: 像网页翻译一样，在每条客户消息旁显示客服可用的提示。
+      - button "生成旁边提示" [ref=e53] [cursor=pointer]
+    - complementary [ref=e56]:
+      - generic [ref=e57]: 识别窗口内容后，提示会贴在对应消息旁边。
