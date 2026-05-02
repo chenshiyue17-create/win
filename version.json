@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-05-02T02:22:25.909413+00:00",
+  "entry_count": 6,
+  "content_sha256": "2a6fc9dac8bd907715b77f4baa9525308216b0199d9e43f237e993d2d7196087",
+  "includes": [
+    "json",
+    "markdown",
+    "images",
+    "attachments",
+    "links",
+    "tables",
+    "version_info"
+  ]
+}
