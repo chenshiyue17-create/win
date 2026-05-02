@@ -7,6 +7,7 @@ This repository is a versioned backup of the local door-and-window presales know
 - Human-readable entries: `entries/`
 - Images and screenshots: `assets/`
 - Tables: `tables/`
+- Pending learning queue: `learning_queue.json`
 - Version manifest: `version.json`
 
 Update flow:

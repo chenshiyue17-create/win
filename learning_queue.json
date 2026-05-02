@@ -1,0 +1,35 @@
+{
+  "candidates": [
+    {
+      "id": "learn-learned-2105015169",
+      "status": "pending",
+      "source_text": "客户问弧形异形窗和电动提升窗后期维护怎么做？",
+      "reason": "未命中现有知识库",
+      "suggested_entry": {
+        "id": "learn-learned-2105015169",
+        "title": "待训练：客户问弧形异形窗和电动提升窗后期维护怎么做",
+        "content": "来自manual-smoke互动的待确认知识点：客户问弧形异形窗和电动提升窗后期维护怎么做？",
+        "tags": [
+          "客户问弧形异形窗和电动提升窗后期维护怎么做"
+        ],
+        "image_path": "/static/assets/window-system.svg",
+        "reply_templates": [
+          "这个问题我先确认具体场景：客户问弧形异形窗和电动提升窗后期维护怎么做？。建议结合楼层、尺寸、预算和使用痛点再给配置。"
+        ],
+        "links": [],
+        "attachments": [],
+        "tables": [],
+        "version": {
+          "version": "0.1.0",
+          "updated_at": "2026-05-02T02:37:55.339344+00:00",
+          "updated_by": "learning_queue",
+          "change_note": "未命中现有知识库"
+        }
+      },
+      "related_matches": [],
+      "created_at": "2026-05-02T02:37:55.339344+00:00",
+      "updated_at": null,
+      "review_note": ""
+    }
+  ]
+}
