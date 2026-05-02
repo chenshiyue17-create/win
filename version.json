@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-05-02T02:54:38.432754+00:00",
-  "entry_count": 6,
-  "content_sha256": "2a6fc9dac8bd907715b77f4baa9525308216b0199d9e43f237e993d2d7196087",
+  "generated_at": "2026-05-02T03:34:42.839543+00:00",
+  "entry_count": 10,
+  "content_sha256": "8125056f0ebf924e6b59e438c03bd0c66124f46be937c9f99199acc01cf91501",
   "includes": [
     "json",
     "markdown",
@@ -12,6 +12,8 @@
     "tables",
     "version_info",
     "learning_queue",
+    "conversation_sessions",
+    "floating_state",
     "interaction_logs",
     "distill_jsonl"
   ]
