@@ -8,6 +8,8 @@ This repository is a versioned backup of the local door-and-window presales know
 - Images and screenshots: `assets/`
 - Tables: `tables/`
 - Pending learning queue: `learning_queue.json`
+- Interaction logs: `interactions.jsonl`
+- Distillation dataset: `interactions_distill.jsonl`
 - Version manifest: `version.json`
 
 Update flow:
