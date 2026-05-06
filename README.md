@@ -7,7 +7,7 @@
 - 上传截面图、样角图、报价图、玻璃爆裂图，本地保存图片并生成分析包。
 - 知识投喂入口：标题、标签、图文内容、回复模板、配图一并入库。
 - 仓库内置知识库：`data/knowledge_base.json`、`data/knowledge/*.md`、`data/visual_index.json`。
-- 图库视觉索引：知识库里的样本图会生成本地视觉指纹，上传新图时先匹配相似截面，再读取绑定的评论回复和品牌结构线索。
+- 图库视觉索引：原始知识库全部图片会生成本地视觉指纹，上传新图时先匹配相似截面，再读取绑定的评论回复和品牌结构线索。
 - 安全备份：每次写入会先备份到 `data/kb_backups`。
 - 不使用外部识图 API：工具只做本地 OCR、图库视觉指纹匹配、知识检索、规则初判和 Codex 分析包。
 - 深度视觉判断由 Codex 处理：页面会自动把相似图库样本、作者回复、品牌结构指纹和已保存图片路径放进“Codex 分析包”。
@@ -54,8 +54,11 @@ curl -X POST http://127.0.0.1:8787/api/vision/match \
   -F 'file=@/absolute/path/to/window.webp' \
   -F 'limit=5'
 
-# 从原始门窗知识库重建图库视觉索引
+# 从原始门窗知识库重建全量图库视觉索引
 PYTHONPATH=src python3 scripts/build_visual_index.py
+
+# 只重建精选样本索引
+PYTHONPATH=src python3 scripts/build_visual_index.py --sample-only
 ```
 
 ## 测试

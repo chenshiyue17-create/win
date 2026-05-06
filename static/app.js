@@ -31,7 +31,8 @@ function setStatus(text) {
 
 async function loadStatus() {
   const status = await requestJson("/api/kb/status");
-  $("#kbCount").textContent = `${status.entries} 条`;
+  const health = await requestJson("/api/health");
+  $("#kbCount").textContent = `${status.entries} 条知识 · ${health.visual_entries || 0} 张图库`;
   $("#kbSource").textContent = `知识文件：${status.source_file}`;
 }
 
@@ -74,7 +75,7 @@ function renderAnalysis(payload) {
       <article class="match-item">
         <strong>${escapeHtml(match.entry.title)}</strong>
         <span>图库相似度 ${Math.round((match.score || 0) * 100)}%</span>
-        <p>${escapeHtml((match.entry.brand_clues || []).join("、") || "无明确品牌线索")}</p>
+        <p>${escapeHtml((match.entry.brand_clues || []).join("、") || "无明确品牌线索")} · ${escapeHtml((match.entry.knowledge_modes || []).slice(0, 5).join("、"))}</p>
         <p>${escapeHtml((match.entry.author_replies || []).join(" ").slice(0, 150))}...</p>
       </article>
     `).join("") + $("#matchList").innerHTML;

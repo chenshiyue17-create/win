@@ -66,7 +66,7 @@ def test_visual_index_matches_existing_knowledge_image(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    entries = build_visual_entries(sample_library, source_root)
+    entries = build_visual_entries(sample_library, source_root, include_all_images=False)
     output = tmp_path / "visual_index.json"
     save_visual_index(entries, output)
 
@@ -76,9 +76,39 @@ def test_visual_index_matches_existing_knowledge_image(tmp_path: Path) -> None:
     matches = index.match_bytes(buffer.getvalue(), limit=2)
 
     assert matches
-    assert matches[0].entry.image == "images/brand-section.webp"
+    assert matches[0].entry.image == "原始知识库/note/images/brand-section.webp"
     assert matches[0].entry.brand_clues == ["新豪轩"]
     assert matches[0].score > 0.95
+
+
+def test_visual_index_can_scan_all_raw_knowledge_images(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    note = source_root / "品牌笔记_abc"
+    image_dir = note / "images"
+    image_dir.mkdir(parents=True)
+    target = image_dir / "raw-section.webp"
+    _section_image(target)
+    (note / "index.md").write_text(
+        "\n".join(
+            [
+                "# 品牌笔记",
+                "**客户A**: 帮我看看新豪轩这款怎么样",
+                "  ![img](images/raw-section.webp)",
+                "  └─ **满天窗(帮看门窗结构)**: 满天窗(帮看门窗结构) 作者 这个主框两个腔体，不能满注胶，超大玻璃承重比较差。",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    sample_library = tmp_path / "visual_sample_library.md"
+    sample_library.write_text("# empty\n", encoding="utf-8")
+
+    entries = build_visual_entries(sample_library, source_root, include_all_images=True)
+
+    assert len(entries) == 1
+    assert entries[0].source_image == "原始知识库/品牌笔记_abc/images/raw-section.webp"
+    assert "新豪轩" in entries[0].brand_clues
+    assert "主框两个腔体" in entries[0].knowledge_modes
+    assert entries[0].author_replies
 
 
 def test_visual_fingerprint_tolerates_small_photo_shift(tmp_path: Path) -> None:
