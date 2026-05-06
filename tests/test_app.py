@@ -223,6 +223,19 @@ def test_feed_knowledge_and_vision_image_endpoint() -> None:
     assert "Codex" in payload["codex_handoff"]
 
 
+def test_structure_identify_endpoint_returns_brand_candidates() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/structure/identify",
+        json={"description": "截面能看到主框两个腔体，不能满注胶，超大玻璃承重比较差"},
+    )
+    assert response.status_code == 200
+    candidates = response.json()["candidates"]
+    assert candidates
+    assert candidates[0]["brand"] == "新豪轩"
+    assert "主框两个腔体" in candidates[0]["features"]
+
+
 def test_analyze_uses_specific_structural_reply_from_distilled_knowledge() -> None:
     client = TestClient(create_app())
     response = client.post(
@@ -264,3 +277,25 @@ def test_analyze_uses_specific_brand_price_warranty_reply_from_comments() -> Non
     assert "799" in hint["suggested_reply"]
     assert "1280" in hint["suggested_reply"]
     assert "五金质保" in hint["suggested_reply"]
+
+
+def test_analyze_answers_brand_from_structure_fingerprint() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/analyze",
+        json={
+            "messages": [
+                {
+                    "id": "m1",
+                    "sender": "customer",
+                    "text": "截面看着主框两个腔体，不能满注胶，超大玻璃承重比较差，这个像什么品牌？",
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    hint = response.json()["hints"][0]
+    assert "截面结构" in hint["suggested_reply"] or "结构看" in hint["suggested_reply"]
+    assert "新豪轩" in hint["suggested_reply"]
+    assert "疑似" in hint["suggested_reply"]
+    assert "品牌结构指纹命中" in hint["interaction_analysis"]

@@ -150,6 +150,56 @@ HIGH_SIGNAL_PHRASES = (
     "116系列",
 )
 
+STRUCTURE_SIGNAL_PHRASES = (
+    "内置铰链",
+    "外小冷腔",
+    "内大暖腔",
+    "冷暖腔",
+    "主框两个腔体",
+    "不能满注胶",
+    "超大玻璃",
+    "承重比较差",
+    "悬浮式移窗",
+    "两道密封",
+    "缺加强筋",
+    "主框六腔体",
+    "主框五腔体",
+    "主框四腔体",
+    "副框内嵌",
+    "内嵌式副框",
+    "副框有垫块",
+    "副框没有垫块",
+    "玻扇只有两个腔体",
+    "玻扇三腔体",
+    "压线不可拆卸",
+    "压线是不可拆卸",
+    "不可拆卸",
+    "活动压线",
+    "闭口压线",
+    "开口压线",
+    "室外侧压线",
+    "排水孔",
+    "栅栏式隔热条",
+    "整体式隔热条",
+    "一字隔热条",
+    "蝴蝶状隔热条",
+    "等压胶条",
+    "搭接量",
+    "垂直等温",
+    "波浪纹",
+    "极窄设计",
+    "通体2.0",
+    "双挡边",
+    "双内开",
+    "内外开",
+    "无缝焊接",
+    "没有隔热条",
+    "不会注胶",
+    "不会刷端面胶",
+    "端面胶",
+    "45度拼接缝",
+)
+
 
 def tokenize(text: str) -> set[str]:
     lowered = text.lower()
@@ -253,6 +303,18 @@ class KnowledgeBase:
                 if phrase in lowered_query and phrase in lowered_haystack:
                     score += 3
                     reasons.append(phrase)
+            structure_hits = [
+                phrase
+                for phrase in STRUCTURE_SIGNAL_PHRASES
+                if phrase.lower() in lowered_query and phrase.lower() in lowered_haystack
+            ]
+            if structure_hits:
+                score += len(structure_hits) * 4
+                reasons.extend(structure_hits[:6])
+            if entry.id.startswith("menchuang-brand-structure-") and len(structure_hits) >= 2:
+                score += 16
+                if "品牌" in lowered_query or "像什么" in lowered_query or "哪家" in lowered_query:
+                    score += 32
             if score > 0 and not entry.id.startswith("menchuang-") and not entry.id.startswith("feed-"):
                 score += 6
             if score >= min_score:

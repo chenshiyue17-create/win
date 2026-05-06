@@ -36,6 +36,7 @@ from customer_context_assistant.models import (
     RecognitionResponse,
 )
 from customer_context_assistant.recognizer import latest_customer_messages, recognize_image_payload, recognize_text_payload
+from customer_context_assistant.structure_classifier import identify_brand_by_structure
 try:
     from customer_context_assistant.web_harvester import harvest_comments_from_url
 except ModuleNotFoundError:
@@ -80,9 +81,10 @@ def _build_codex_handoff(
             "1. 先识别图片类型和室内外方向，不确定就说明。",
             "2. 逐项看主框、副框、玻扇、压线、隔热条、胶条、玻璃入槽、五金位。",
             "3. 分析承重、隔热、水密、气密、工艺售后四条路径。",
-            "4. 品牌只能说疑似/像/有某类线索，除非图上有直接证据。",
-            "5. 价格要结合安装、开扇、运费、吊装、玻璃增配，不要绝对化。",
-            "6. 最后给一段能直接复制给客户的中文回复。",
+            "4. 如果知识命中含“品牌结构指纹”，必须先列出图上对应结构证据，再说疑似品牌/系列；不要用品牌词或价格词替代结构判断。",
+            "5. 品牌只能说疑似/像/有某类线索，除非图上有直接商标、型材喷码或报价单证据。",
+            "6. 价格要结合安装、开扇、运费、吊装、玻璃增配，不要绝对化。",
+            "7. 最后给一段能直接复制给客户的中文回复。",
         ]
     )
 
@@ -125,6 +127,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/health")
     def health() -> dict[str, object]:
         return {"ok": True, "entries": len(kb.list_entries())}
+
+    @app.post("/api/structure/identify")
+    def identify_structure(payload: dict) -> dict[str, object]:
+        description = str(payload.get("description", "")).strip()
+        if not description:
+            raise HTTPException(status_code=400, detail="description is required")
+        candidates = identify_brand_by_structure(kb, description, limit=int(payload.get("limit", 5) or 5))
+        return {
+            "candidates": [
+                {
+                    "brand": item.brand,
+                    "series": item.series,
+                    "features": item.features,
+                    "score": item.score,
+                    "evidence": item.evidence,
+                    "entry_id": item.entry_id,
+                }
+                for item in candidates
+            ],
+            "rule": "先识别截面可见特征，再用品牌结构指纹匹配；少于两个结构特征不做品牌判断。",
+        }
 
     @app.get("/api/kb")
     def list_kb() -> dict[str, object]:

@@ -59,9 +59,11 @@ def _relevant_knowledge_lines(query: str, matches: list, limit: int = 5) -> list
             line_tokens = tokenize(line)
             overlap = query_tokens & line_tokens
             score = len(overlap)
+            if line.startswith(("品牌结构指纹", "系列/型号线索", "截面结构特征", "证据原文")):
+                score += 4
             if "作者" in line:
                 score += 2
-            if any(word in line for word in ("讴铂", "欧泊", "新豪轩", "799", "1280", "五金质保", "内置铰链", "外小冷腔", "压线", "隔热条", "价格", "五金")):
+            if any(word in line for word in ("讴铂", "欧泊", "新豪轩", "799", "1280", "五金质保", "内置铰链", "外小冷腔", "主框两个腔体", "不能满注胶", "玻扇只有两个腔体", "压线", "隔热条", "价格", "五金")):
                 score += 1
             if score >= 2:
                 scored.append((score + match.score, line))
@@ -77,9 +79,37 @@ def _relevant_knowledge_lines(query: str, matches: list, limit: int = 5) -> list
     return result
 
 
+def _field_from_content(content: str, label: str) -> str:
+    prefix = f"{label}："
+    for raw_line in content.splitlines():
+        line = _clean_line(raw_line)
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return ""
+
+
+def _brand_structure_reply(match) -> str:
+    content = match.entry.content
+    brand = _field_from_content(content, "品牌结构指纹") or "某品牌"
+    series = _field_from_content(content, "系列/型号线索") or "未明确到系列"
+    features = _field_from_content(content, "截面结构特征")
+    evidence = _field_from_content(content, "证据原文")
+    evidence_hint = f"知识库原文里对应说法是：{evidence[:120]}。" if evidence else ""
+    return (
+        f"先按截面结构看，不直接按品牌名下结论；这张图如果能看到 {features} 这些点同时成立，"
+        f"知识库里对应的是“疑似/像 {brand}”的结构线索，系列线索是 {series}。"
+        f"{evidence_hint}"
+        "建议继续让商家补型材标识、报价单系列名、五金/胶条/隔热条品牌和开扇/安装包含项；"
+        "品牌只能写疑似，最终以实物标识和合同配置为准。"
+    )
+
+
 def build_reply(message: MessageInput, matches: list, warnings: list[str]) -> str:
     if warnings:
         return "这个点需要谨慎表达，不能做绝对化承诺。我先按客户户型、楼层、朝向、噪音源和预算来判断适合配置，再给可落地的建议。"
+    for match in matches[:5]:
+        if match.entry.id.startswith("menchuang-brand-structure-"):
+            return _brand_structure_reply(match)
     lines = _relevant_knowledge_lines(message.text, matches, limit=3)
     if lines:
         first = lines[0]
@@ -120,6 +150,16 @@ def build_interaction_analysis(message: MessageInput, context: list[MessageInput
         points.append("先识别客户真实动机：省钱、怕踩坑、想比较、还是准备下单，再决定追问深度。")
     if matches:
         points.append(f"可引用知识库：{matches[0].entry.title}。")
+    brand_structure_matches = [match for match in matches[:5] if match.entry.id.startswith("menchuang-brand-structure-")]
+    if brand_structure_matches:
+        brand_lines = []
+        for match in brand_structure_matches[:2]:
+            brand = _field_from_content(match.entry.content, "品牌结构指纹")
+            features = _field_from_content(match.entry.content, "截面结构特征")
+            if brand and features:
+                brand_lines.append(f"{brand}: {features}")
+        if brand_lines:
+            points.append("品牌结构指纹命中：" + " / ".join(brand_lines) + "。")
     relevant_lines = _relevant_knowledge_lines(message.text, matches, limit=3)
     if relevant_lines:
         points.append("命中的具体判断：" + " / ".join(relevant_lines))

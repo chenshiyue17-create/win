@@ -124,6 +124,92 @@ REPLY_SIGNAL_WORDS = (
     "pass",
 )
 
+BRAND_NAMES = (
+    "讴铂",
+    "欧泊",
+    "新豪轩",
+    "富轩",
+    "富贵花",
+    "皇派",
+    "派雅",
+    "轩尼斯",
+    "兴发",
+    "京港亚",
+    "极景",
+    "正典",
+    "19分贝",
+    "铂斯派",
+    "卫洛柯",
+    "伟昌",
+    "坚美",
+    "伟业",
+)
+
+SERIES_WORDS = (
+    "青龙",
+    "锦轩",
+    "亚运",
+    "万家灯火",
+    "圣卡罗",
+    "MS6",
+    "XS6",
+    "105",
+    "100",
+    "116",
+    "90",
+    "T6",
+)
+
+STRUCTURE_FEATURES = (
+    "内置铰链",
+    "外小冷腔",
+    "内大暖腔",
+    "冷暖腔",
+    "主框两个腔体",
+    "不能满注胶",
+    "超大玻璃",
+    "承重比较差",
+    "悬浮式移窗",
+    "两道密封",
+    "缺加强筋",
+    "主框六腔体",
+    "主框五腔体",
+    "主框四腔体",
+    "副框内嵌",
+    "内嵌式副框",
+    "副框有垫块",
+    "副框没有垫块",
+    "玻扇只有两个腔体",
+    "玻扇三腔体",
+    "压线不可拆卸",
+    "压线是不可拆卸",
+    "不可拆卸",
+    "活动压线",
+    "闭口压线",
+    "开口压线",
+    "室外侧压线",
+    "排水孔",
+    "栅栏式隔热条",
+    "整体式隔热条",
+    "一字隔热条",
+    "蝴蝶状隔热条",
+    "等压胶条",
+    "搭接量",
+    "垂直等温",
+    "波浪纹",
+    "极窄设计",
+    "通体2.0",
+    "双挡边",
+    "双内开",
+    "内外开",
+    "无缝焊接",
+    "没有隔热条",
+    "不会注胶",
+    "不会刷端面胶",
+    "端面胶",
+    "45度拼接缝",
+)
+
 
 @dataclass(frozen=True)
 class Section:
@@ -246,6 +332,88 @@ def extract_reply_line_entries(path: Path, markdown: str) -> list[dict]:
     return entries
 
 
+def hits_from(line: str, phrases: tuple[str, ...]) -> list[str]:
+    lowered = line.lower()
+    hits: list[str] = []
+    for phrase in phrases:
+        if phrase.lower() in lowered and phrase not in hits:
+            hits.append(phrase)
+    return hits
+
+
+def structure_hits_from(segment: str) -> list[str]:
+    hits = hits_from(segment, STRUCTURE_FEATURES)
+    if "不如玻扇三腔体" in segment and "玻扇三腔体" in hits:
+        hits.remove("玻扇三腔体")
+    if "不如玻扇三腔体带活动压线" in segment and "活动压线" in hits:
+        hits.remove("活动压线")
+    return hits
+
+
+def brand_structure_content(brand: str, series: list[str], features: list[str], line: str, source: Path) -> str:
+    series_text = "、".join(series) if series else "未明确到系列"
+    feature_text = "、".join(features)
+    return "\n".join(
+        [
+            f"品牌结构指纹：{brand}",
+            f"系列/型号线索：{series_text}",
+            f"截面结构特征：{feature_text}",
+            "",
+            f"证据原文：{line}",
+            "",
+            "结构推理规则：分析客户截面图时，先从图上独立识别主框、副框、玻扇、压线、隔热条、胶条、五金位、玻璃入槽和密封搭接；只有当图片结构与本卡多个特征同时吻合，才把品牌写成“疑似/像/有某品牌线索”。不要只凭品牌词、价格词或单一结构点下结论。",
+            f"来源文件：data/knowledge/{source.name}",
+        ]
+    )
+
+
+def brand_context_segment(line: str, brand: str) -> str:
+    start = line.find(brand)
+    if start < 0:
+        return line
+    other_positions = [line.find(other, start + len(brand)) for other in BRAND_NAMES if other != brand and line.find(other, start + len(brand)) >= 0]
+    end = min(other_positions) if other_positions else len(line)
+    left = max(0, start - 30)
+    return line[left:end]
+
+
+def extract_brand_structure_entries(path: Path, markdown: str) -> list[dict]:
+    entries: list[dict] = []
+    seen_keys: set[tuple[str, str, str]] = set()
+    for index, raw_line in enumerate(markdown.splitlines(), start=1):
+        line = clean_reply_line(raw_line)
+        if len(line) < 28 or len(line) > 700:
+            continue
+        brands = hits_from(line, BRAND_NAMES)
+        features = structure_hits_from(line)
+        if not brands or len(features) < 2:
+            continue
+        for brand in brands:
+            segment = brand_context_segment(line, brand)
+            brand_features = structure_hits_from(segment)
+            if len(brand_features) < 2:
+                continue
+            series = hits_from(segment, SERIES_WORDS)
+            key = (brand, "|".join(brand_features[:6]), line[:80])
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            title_features = " + ".join(brand_features[:4])
+            title = f"品牌结构指纹: {brand}｜{title_features}"
+            content = brand_structure_content(brand, series, brand_features, line, path)
+            entries.append(
+                entry(
+                    f"{GENERATED_PREFIX}brand-structure-{slugify(path.stem, path.stem)}-{index:04d}-{slugify(brand + '-' + title_features, str(index))}",
+                    title,
+                    content,
+                    infer_tags(title, content, ["品牌结构指纹", "截面品牌线索", brand, *brand_features[:8]]),
+                    path,
+                    "品牌结构指纹",
+                )
+            )
+    return entries
+
+
 def entry(entry_id: str, title: str, content: str, tags: list[str], source: Path, kind: str) -> dict:
     return {
         "id": entry_id,
@@ -298,6 +466,7 @@ def build_from_file(path: Path) -> list[dict]:
                 )
             )
         entries.extend(extract_reply_line_entries(path, markdown))
+        entries.extend(extract_brand_structure_entries(path, markdown))
         return entries
 
     title = markdown.splitlines()[0].lstrip("# ").strip() if markdown.splitlines() else stem
@@ -312,6 +481,7 @@ def build_from_file(path: Path) -> list[dict]:
         )
     )
     entries.extend(extract_reply_line_entries(path, markdown))
+    entries.extend(extract_brand_structure_entries(path, markdown))
     return entries
 
 

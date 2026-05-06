@@ -3,6 +3,7 @@ import json
 from customer_context_assistant.config import load_settings
 from customer_context_assistant.knowledge_base import KnowledgeBase
 from customer_context_assistant.models import KnowledgeEntry
+from customer_context_assistant.structure_classifier import identify_brand_by_structure
 
 
 def test_knowledge_search_finds_window_glass() -> None:
@@ -42,6 +43,42 @@ def test_knowledge_search_finds_specific_xinhaoxuan_price_warranty_case() -> Non
     assert "质保" in joined
 
 
+def test_knowledge_search_finds_brand_by_structure_fingerprint() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    matches = kb.search("主框两个腔体 不能满注胶 超大玻璃 承重比较差 这个截面像什么品牌", limit=5, min_score=1)
+    assert matches[0].entry.id.startswith("menchuang-brand-structure-")
+    assert "新豪轩" in matches[0].entry.content
+    assert "主框两个腔体" in matches[0].entry.content
+    assert "不能满注胶" in matches[0].entry.content
+
+
+def test_knowledge_search_prioritizes_brand_fingerprint_for_brand_question() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    matches = kb.search("内置铰链 外小冷腔 保温隔热 这个截面像什么品牌", limit=5, min_score=1)
+    assert matches[0].entry.id.startswith("menchuang-brand-structure-")
+    assert "讴铂" in matches[0].entry.content
+
+
+def test_structure_classifier_identifies_brand_like_image_classifier() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    candidates = identify_brand_by_structure(kb, "图上是内置铰链，外小冷腔，保温隔热更好的截面")
+    assert candidates
+    assert candidates[0].brand == "讴铂"
+    assert {"内置铰链", "外小冷腔"}.issubset(set(candidates[0].features))
+
+
+def test_knowledge_search_keeps_brand_structure_attribution_local() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    matches = kb.search("玻扇只有两个腔体 压线是不可拆卸 不会注胶 端面胶 45度拼接缝", limit=5, min_score=1)
+    joined_top = "\n".join(match.entry.content for match in matches[:3])
+    assert "派雅" in joined_top
+    assert "品牌结构指纹：新豪轩" not in joined_top
+
+
 def test_knowledge_base_is_granular_rebuild_not_big_modules() -> None:
     settings = load_settings()
     kb = KnowledgeBase(settings.knowledge_base.source_file)
@@ -50,6 +87,7 @@ def test_knowledge_base_is_granular_rebuild_not_big_modules() -> None:
     assert len(entries) >= 200
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-sample-")) >= 100
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-reply-")) >= 100
+    assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-brand-structure-")) >= 20
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-section-")) >= 15
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-brand-")) >= 10
 
