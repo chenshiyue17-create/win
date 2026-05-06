@@ -79,6 +79,17 @@ DOMAIN_PHRASES = (
     "超白",
     "三玻两腔",
     "自爆",
+    "包含安装",
+    "包含安装费",
+    "质保",
+    "五金质保",
+    "一年",
+    "799",
+    "898",
+    "1280",
+    "100系列",
+    "105系列",
+    "116系列",
     "8字纹",
     "蝴蝶纹",
     "讴铂",
@@ -102,6 +113,41 @@ DOMAIN_PHRASES = (
     "好博",
     "江阴海达",
     "瑞纳斯",
+)
+
+BRAND_PHRASES = (
+    "讴铂",
+    "欧泊",
+    "新豪轩",
+    "富轩",
+    "富贵花",
+    "皇派",
+    "派雅",
+    "轩尼斯",
+    "兴发",
+    "京港亚",
+    "极景",
+    "正典",
+    "19分贝",
+    "铂斯派",
+    "卫洛柯",
+    "伟昌",
+    "坚美",
+    "伟业",
+)
+
+HIGH_SIGNAL_PHRASES = (
+    "799",
+    "898",
+    "1280",
+    "五金质保",
+    "包含安装费",
+    "包含安装",
+    "开扇",
+    "一年",
+    "100系列",
+    "105系列",
+    "116系列",
 )
 
 
@@ -198,6 +244,17 @@ class KnowledgeBase:
             for phrase in tokenize(entry.title):
                 if phrase in lowered_query:
                     score += 2
+            lowered_haystack = haystack.lower()
+            for phrase in BRAND_PHRASES:
+                if phrase in lowered_query and phrase in lowered_haystack:
+                    score += 8
+                    reasons.append(phrase)
+            for phrase in HIGH_SIGNAL_PHRASES:
+                if phrase in lowered_query and phrase in lowered_haystack:
+                    score += 3
+                    reasons.append(phrase)
+            if score > 0 and not entry.id.startswith("menchuang-") and not entry.id.startswith("feed-"):
+                score += 6
             if score >= min_score:
                 matches.append(KnowledgeMatch(entry=entry, score=score, reasons=sorted(set(reasons))))
 

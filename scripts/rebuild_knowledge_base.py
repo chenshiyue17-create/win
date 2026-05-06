@@ -52,11 +52,23 @@ DOMAIN_PHRASES = (
     "超白",
     "三玻两腔",
     "开扇",
+    "开扇1280",
+    "包含安装",
+    "包含安装费",
     "安装费",
     "运费",
     "吊装",
     "报价",
     "价格",
+    "质保",
+    "五金质保",
+    "一年",
+    "799",
+    "898",
+    "1280",
+    "100系列",
+    "105系列",
+    "116系列",
     "自爆",
     "8字纹",
     "蝴蝶纹",
@@ -81,6 +93,35 @@ DOMAIN_PHRASES = (
     "好博",
     "江阴海达",
     "瑞纳斯",
+)
+
+REPLY_AUTHORS = ("满天窗", "门窗砍价官")
+REPLY_SIGNAL_WORDS = (
+    "可以",
+    "更好",
+    "不建议",
+    "像是",
+    "好像是",
+    "产品",
+    "价格",
+    "报价",
+    "一个平方",
+    "开扇",
+    "安装费",
+    "包含安装",
+    "运费",
+    "五金",
+    "质保",
+    "压线",
+    "隔热",
+    "结构",
+    "腔体",
+    "胶条",
+    "隔热条",
+    "玻璃",
+    "品牌",
+    "系列",
+    "pass",
 )
 
 
@@ -152,6 +193,59 @@ def reply_template(content: str) -> list[str]:
     return ["我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"]
 
 
+def clean_reply_line(raw_line: str) -> str:
+    line = re.sub(r"^[#>*\-\s└─`]+", "", raw_line).strip()
+    line = re.sub(r"`+", "", line)
+    return re.sub(r"\s+", " ", line)
+
+
+def is_reply_knowledge_line(line: str) -> bool:
+    if len(line) < 24 or len(line) > 520:
+        return False
+    if not any(author in line for author in REPLY_AUTHORS):
+        return False
+    if "作者" not in line and "回复" not in line:
+        return False
+    return any(word in line for word in REPLY_SIGNAL_WORDS)
+
+
+def reply_line_content(line: str, source: Path) -> str:
+    return "\n".join(
+        [
+            line,
+            "",
+            "使用规则：这是从整库图文评论里拆出的独立作者回复知识卡。先看当前图片/客户问题，再把这条作为相似案例校准；涉及品牌只能说疑似或相似线索，价格要结合城市、安装、开扇、玻璃增配、运费、吊装和质保边界。",
+            f"来源文件：data/knowledge/{source.name}",
+        ]
+    )
+
+
+def extract_reply_line_entries(path: Path, markdown: str) -> list[dict]:
+    entries: list[dict] = []
+    seen_lines: set[str] = set()
+    for index, raw_line in enumerate(markdown.splitlines(), start=1):
+        line = clean_reply_line(raw_line)
+        if line in seen_lines or not is_reply_knowledge_line(line):
+            continue
+        seen_lines.add(line)
+        short_title = line
+        if len(short_title) > 72:
+            short_title = short_title[:72] + "..."
+        title = f"作者回复: {short_title}"
+        content = reply_line_content(line, path)
+        entries.append(
+            entry(
+                f"{GENERATED_PREFIX}reply-{slugify(path.stem, path.stem)}-{index:04d}-{slugify(line[:36], str(index))}",
+                title,
+                content,
+                infer_tags(title, content, ["作者回复", "评论知识", "门窗知识库"]),
+                path,
+                "作者回复",
+            )
+        )
+    return entries
+
+
 def entry(entry_id: str, title: str, content: str, tags: list[str], source: Path, kind: str) -> dict:
     return {
         "id": entry_id,
@@ -203,6 +297,7 @@ def build_from_file(path: Path) -> list[dict]:
                     kind_label,
                 )
             )
+        entries.extend(extract_reply_line_entries(path, markdown))
         return entries
 
     title = markdown.splitlines()[0].lstrip("# ").strip() if markdown.splitlines() else stem
@@ -216,6 +311,7 @@ def build_from_file(path: Path) -> list[dict]:
             "完整文档",
         )
     )
+    entries.extend(extract_reply_line_entries(path, markdown))
     return entries
 
 

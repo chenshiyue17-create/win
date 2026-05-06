@@ -31,6 +31,17 @@ def test_knowledge_search_finds_specific_oubo_hinge_case() -> None:
     assert "外小冷腔" in joined
 
 
+def test_knowledge_search_finds_specific_xinhaoxuan_price_warranty_case() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    matches = kb.search("新豪轩 799 包含安装费 开扇1280 五金质保一年", limit=5, min_score=1)
+    joined = "\n".join(match.entry.content for match in matches)
+    assert "新豪轩" in joined
+    assert "799" in joined
+    assert "1280" in joined
+    assert "质保" in joined
+
+
 def test_knowledge_base_is_granular_rebuild_not_big_modules() -> None:
     settings = load_settings()
     kb = KnowledgeBase(settings.knowledge_base.source_file)
@@ -38,6 +49,7 @@ def test_knowledge_base_is_granular_rebuild_not_big_modules() -> None:
     ids = [entry.id for entry in entries]
     assert len(entries) >= 200
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-sample-")) >= 100
+    assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-reply-")) >= 100
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-section-")) >= 15
     assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-brand-")) >= 10
 

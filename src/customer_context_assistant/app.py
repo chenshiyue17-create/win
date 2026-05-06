@@ -325,7 +325,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return AnalyzeResponse(hints=[])
         raw_text = "\n".join(message.text for message in request.messages)
         session_id = infer_session_id_from_text(raw_text, request.session_id)
-        prior_context = conversation_store.recent_context(session_id, limit=8)
+        has_explicit_context = request.session_id.strip() not in {"", "default"} or session_id != "default"
+        prior_context = conversation_store.recent_context(session_id, limit=8) if has_explicit_context else []
         analysis_messages = prior_context + target_messages
         candidates = []
         if request.learn:

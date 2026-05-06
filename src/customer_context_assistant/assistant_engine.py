@@ -61,7 +61,7 @@ def _relevant_knowledge_lines(query: str, matches: list, limit: int = 5) -> list
             score = len(overlap)
             if "作者" in line:
                 score += 2
-            if any(word in line for word in ("讴铂", "欧泊", "内置铰链", "外小冷腔", "压线", "隔热条", "价格", "五金")):
+            if any(word in line for word in ("讴铂", "欧泊", "新豪轩", "799", "1280", "五金质保", "内置铰链", "外小冷腔", "压线", "隔热条", "价格", "五金")):
                 score += 1
             if score >= 2:
                 scored.append((score + match.score, line))
@@ -88,6 +88,12 @@ def build_reply(message: MessageInput, matches: list, warnings: list[str]) -> st
                 "这款从知识库相似案例看，比较像讴铂/欧泊一类的内置铰链结构，但品牌只能说疑似，不能直接认定。"
                 "它的优点是内置铰链稳定性相对更好，外小冷腔、内大暖腔的设计对型材保温隔热有帮助。"
                 "继续追问商家五金具体品牌、隔热条/胶条品牌、玻璃配置、安装和开扇费用，再判断价格是否合适。"
+            )
+        if "新豪轩" in first and any(word in first for word in ("799", "1280", "五金质保", "质保")):
+            return (
+                "这款从知识库相似案例看，疑似新豪轩产品，但品牌仍建议按商家报价单或型材标识确认。"
+                "参考同类评论案例：价格大概 799/平，开扇一般 1280 左右，重点要确认是否包含安装费、运费和玻璃增配。"
+                "另外这类案例里提到五金质保可能只有一年，建议让商家把五金品牌、质保年限、胶条/隔热条品牌和售后范围写进合同。"
             )
         return "参考知识库相似判断：" + first[:180] + " 建议再补充五金、胶条、隔热条、玻璃配置和报价包含项后确认。"
     if matches and matches[0].entry.reply_templates:

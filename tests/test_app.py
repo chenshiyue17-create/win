@@ -242,3 +242,25 @@ def test_analyze_uses_specific_structural_reply_from_distilled_knowledge() -> No
     assert "讴铂" in hint["suggested_reply"]
     assert "内置铰链" in hint["suggested_reply"]
     assert "命中的具体判断" in hint["interaction_analysis"]
+
+
+def test_analyze_uses_specific_brand_price_warranty_reply_from_comments() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/analyze",
+        json={
+            "messages": [
+                {
+                    "id": "m1",
+                    "sender": "customer",
+                    "text": "帮看这款，新豪轩，799一个平方，包含安装费，开扇1280，五金质保一年能买吗",
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    hint = response.json()["hints"][0]
+    assert "新豪轩" in hint["suggested_reply"]
+    assert "799" in hint["suggested_reply"]
+    assert "1280" in hint["suggested_reply"]
+    assert "五金质保" in hint["suggested_reply"]
