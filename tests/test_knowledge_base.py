@@ -21,6 +21,16 @@ def test_knowledge_search_finds_transaction_psychology() -> None:
     assert any(match.entry.id.startswith("psychology-") for match in matches)
 
 
+def test_knowledge_search_finds_specific_oubo_hinge_case() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    matches = kb.search("这款像讴铂吗 内置铰链 外小冷腔 保温隔热怎么样", limit=5, min_score=1)
+    joined = "\n".join(match.entry.content for match in matches)
+    assert "讴铂" in joined
+    assert "内置铰链" in joined
+    assert "外小冷腔" in joined
+
+
 def test_knowledge_import_upserts_training_data(tmp_path) -> None:
     source = tmp_path / "kb.json"
     source.write_text(json.dumps({"entries": []}, ensure_ascii=False), encoding="utf-8")

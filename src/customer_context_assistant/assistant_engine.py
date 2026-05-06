@@ -5,7 +5,7 @@ import logging
 import re
 
 from customer_context_assistant.config import AssistantConfig, KnowledgeConfig
-from customer_context_assistant.knowledge_base import KnowledgeBase
+from customer_context_assistant.knowledge_base import KnowledgeBase, tokenize
 from customer_context_assistant.models import AnalyzeRequest, AnalyzeResponse, Hint, MessageInput
 
 
@@ -40,9 +40,56 @@ def detect_warnings(text: str, stop_words: tuple[str, ...]) -> list[str]:
     return warnings
 
 
+def _clean_line(line: str) -> str:
+    cleaned = re.sub(r"^[#>*\\-\\s]+", "", line).strip()
+    cleaned = re.sub(r"`", "", cleaned)
+    return re.sub(r"\s+", " ", cleaned)
+
+
+def _relevant_knowledge_lines(query: str, matches: list, limit: int = 5) -> list[str]:
+    query_tokens = tokenize(query)
+    if not query_tokens:
+        return []
+    scored: list[tuple[int, str]] = []
+    for match in matches[:6]:
+        for raw_line in match.entry.content.splitlines():
+            line = _clean_line(raw_line)
+            if len(line) < 16 or line.startswith(("图片:", "来源", "样本数", "品牌画像数")):
+                continue
+            line_tokens = tokenize(line)
+            overlap = query_tokens & line_tokens
+            score = len(overlap)
+            if "作者" in line:
+                score += 2
+            if any(word in line for word in ("讴铂", "欧泊", "内置铰链", "外小冷腔", "压线", "隔热条", "价格", "五金")):
+                score += 1
+            if score >= 2:
+                scored.append((score + match.score, line))
+    seen: set[str] = set()
+    result: list[str] = []
+    for _, line in sorted(scored, key=lambda item: item[0], reverse=True):
+        if line in seen:
+            continue
+        seen.add(line)
+        result.append(line)
+        if len(result) >= limit:
+            break
+    return result
+
+
 def build_reply(message: MessageInput, matches: list, warnings: list[str]) -> str:
     if warnings:
         return "这个点需要谨慎表达，不能做绝对化承诺。我先按客户户型、楼层、朝向、噪音源和预算来判断适合配置，再给可落地的建议。"
+    lines = _relevant_knowledge_lines(message.text, matches, limit=3)
+    if lines:
+        first = lines[0]
+        if "讴铂" in first or "欧泊" in first or "内置铰链" in first:
+            return (
+                "这款从知识库相似案例看，比较像讴铂/欧泊一类的内置铰链结构，但品牌只能说疑似，不能直接认定。"
+                "它的优点是内置铰链稳定性相对更好，外小冷腔、内大暖腔的设计对型材保温隔热有帮助。"
+                "继续追问商家五金具体品牌、隔热条/胶条品牌、玻璃配置、安装和开扇费用，再判断价格是否合适。"
+            )
+        return "参考知识库相似判断：" + first[:180] + " 建议再补充五金、胶条、隔热条、玻璃配置和报价包含项后确认。"
     if matches and matches[0].entry.reply_templates:
         return matches[0].entry.reply_templates[0]
     return f"收到，关于“{message.text[:28]}”，我建议先问清楚使用场景、楼层朝向、是否临街、洞口尺寸和预算，再给门窗配置。"
@@ -67,6 +114,9 @@ def build_interaction_analysis(message: MessageInput, context: list[MessageInput
         points.append("先识别客户真实动机：省钱、怕踩坑、想比较、还是准备下单，再决定追问深度。")
     if matches:
         points.append(f"可引用知识库：{matches[0].entry.title}。")
+    relevant_lines = _relevant_knowledge_lines(message.text, matches, limit=3)
+    if relevant_lines:
+        points.append("命中的具体判断：" + " / ".join(relevant_lines))
     if message.text and any(word in message.text for word in ("图片", "截面", "样角", "结构", "品牌", "价格")):
         points.append("本地工具不调用外部识图 API；先基于图片保存路径、OCR 文本和知识命中生成初判，深度视觉结构判断交给 Codex。")
     return " ".join(points)

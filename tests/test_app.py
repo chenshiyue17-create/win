@@ -221,3 +221,24 @@ def test_feed_knowledge_and_vision_image_endpoint() -> None:
     assert "knowledge_status" in payload
     assert payload["local_only"] is True
     assert "Codex" in payload["codex_handoff"]
+
+
+def test_analyze_uses_specific_structural_reply_from_distilled_knowledge() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/analyze",
+        json={
+            "messages": [
+                {
+                    "id": "m1",
+                    "sender": "customer",
+                    "text": "帮忙看一下这款怎么样？作者说有点像讴铂，内置铰链，外小冷腔，保温隔热会更好一些",
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    hint = response.json()["hints"][0]
+    assert "讴铂" in hint["suggested_reply"]
+    assert "内置铰链" in hint["suggested_reply"]
+    assert "命中的具体判断" in hint["interaction_analysis"]
