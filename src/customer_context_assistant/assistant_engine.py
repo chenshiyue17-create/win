@@ -4,8 +4,7 @@ import json
 import logging
 import re
 
-import httpx
-from customer_context_assistant.config import AssistantConfig, KnowledgeConfig, LLMConfig
+from customer_context_assistant.config import AssistantConfig, KnowledgeConfig
 from customer_context_assistant.knowledge_base import KnowledgeBase
 from customer_context_assistant.models import AnalyzeRequest, AnalyzeResponse, Hint, MessageInput
 
@@ -68,6 +67,8 @@ def build_interaction_analysis(message: MessageInput, context: list[MessageInput
         points.append("先识别客户真实动机：省钱、怕踩坑、想比较、还是准备下单，再决定追问深度。")
     if matches:
         points.append(f"可引用知识库：{matches[0].entry.title}。")
+    if message.text and any(word in message.text for word in ("图片", "截面", "样角", "结构", "品牌", "价格")):
+        points.append("本地工具不调用外部识图 API；先基于图片保存路径、OCR 文本和知识命中生成初判，深度视觉结构判断交给 Codex。")
     return " ".join(points)
 
 
@@ -88,11 +89,10 @@ def latest_customer_message(messages: list[MessageInput]) -> tuple[int, MessageI
 
 
 class AssistantEngine:
-    def __init__(self, knowledge_base: KnowledgeBase, kb_config: KnowledgeConfig, assistant_config: AssistantConfig, llm_config: LLMConfig | None = None) -> None:
+    def __init__(self, knowledge_base: KnowledgeBase, kb_config: KnowledgeConfig, assistant_config: AssistantConfig) -> None:
         self.knowledge_base = knowledge_base
         self.kb_config = kb_config
         self.assistant_config = assistant_config
-        self.llm_config = llm_config
 
     def analyze(self, request: AnalyzeRequest) -> AnalyzeResponse:
         latest = latest_customer_message(request.messages)
@@ -116,17 +116,8 @@ class AssistantEngine:
         if context:
             summary = f"结合本客户最近 {len(context)} 条上下文：" + summary
 
-        # 尝试使用 OpenAI-compatible Vision 模型增强分析。
         interaction_analysis = ""
         suggested_reply = ""
-        
-        if self.llm_config and self.llm_config.api_key:
-            try:
-                interaction_analysis, suggested_reply = self._analyze_with_gemini(
-                    message, context, matches, warnings, image_bytes=request.image_bytes
-                )
-            except Exception as exc:
-                LOGGER.warning("Vision LLM 分析失败，降级到本地逻辑: %s", exc)
 
         if not suggested_reply:
             interaction_analysis = build_interaction_analysis(message, context, matches, warnings)
@@ -146,69 +137,3 @@ class AssistantEngine:
                 )
             ]
         )
-
-    def _analyze_with_gemini(self, message: MessageInput, context: list[MessageInput], matches: list, warnings: list[str], image_bytes: bytes | None = None) -> tuple[str, str]:
-        """利用 OpenAI-compatible Vision 接口结合仓库知识库和图片生成回复。"""
-        import base64
-        
-        context_str = "\n".join([f"{m.sender}: {m.text}" for m in context])
-        kb_context = ""
-        if matches:
-            kb_context = "\n\n".join([f"【知识点: {m.entry.title}】\n内容: {m.entry.content}\n建议话术参考: {', '.join(m.entry.reply_templates)}" for m in matches])
-
-        prompt = f"""你是一个严谨的门窗技术顾问，擅长通过断桥铝/系统窗型材截面、现场图、报价图分析结构和风险。
-
-1. 任务要求：
-- 如果提供了图片，先观察型材截面或现场可见结构，不要只做关键词拼接。
-- 分析：主框/副框/玻扇、压线是否可拆、隔热条是否连续、胶条搭接、承重路径、水密气密路径、玻璃配置和安装风险。
-- 品牌判断只能说“疑似/像/有某类结构线索”，除非图片里有 logo、报价单或喷码证据。
-- 价格判断必须结合配置、面积、开扇、安装、运费、吊装、玻璃增配和城市，不要绝对化。
-
-2. 仓库内置知识库参考：
-{kb_context or "未匹配到特定本地知识，请基于您的行业大脑回答。"}
-
-3. 对话上下文：
-{context_str}
-
-4. 客户当前问题：{message.text}
-
-{'5. 风险警告：' + ', '.join(warnings) if warnings else ''}
-
-请输出 JSON：
-- interaction_analysis: 深度结构分析、品牌线索、价格与风险判断；必须说明证据和置信度。
-- suggested_reply: 可以直接复制给客户的中文回复，专业但口语化。
-"""
-        messages = [
-            {"role": "system", "content": "你是一个严谨的门窗样角识别专家。"},
-        ]
-        
-        user_content = [{"type": "text", "text": prompt}]
-        
-        if image_bytes:
-            b64_image = base64.b64encode(image_bytes).decode("utf-8")
-            user_content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{b64_image}"}
-            })
-            
-        messages.append({"role": "user", "content": user_content})
-
-        headers = {
-            "Authorization": f"Bearer {self.llm_config.api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": self.llm_config.model,
-            "messages": messages,
-            "temperature": self.llm_config.temperature,
-            "response_format": {"type": "json_object"}
-        }
-        
-        base_url = self.llm_config.base_url.rstrip("/")
-        with httpx.Client(timeout=45.0) as client:
-            resp = client.post(f"{base_url}/chat/completions", json=payload, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            return parsed.get("interaction_analysis", ""), parsed.get("suggested_reply", "")

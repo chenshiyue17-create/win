@@ -219,3 +219,5 @@ def test_feed_knowledge_and_vision_image_endpoint() -> None:
     assert payload["analysis"]["hints"]
     assert payload["upload_path"].endswith(".png")
     assert "knowledge_status" in payload
+    assert payload["local_only"] is True
+    assert "Codex" in payload["codex_handoff"]

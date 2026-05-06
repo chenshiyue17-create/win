@@ -1,6 +1,7 @@
 const state = {
   imageFile: null,
-  lastReply: ""
+  lastReply: "",
+  codexHandoff: ""
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -47,16 +48,19 @@ function renderAnalysis(payload) {
   if (!hint) {
     $("#analysisText").innerHTML = "没有生成分析。";
     $("#replyText").value = "";
+    $("#codexText").value = "";
     $("#matchList").innerHTML = "";
     return;
   }
   state.lastReply = hint.suggested_reply || "";
+  state.codexHandoff = payload.codex_handoff || "";
   $("#analysisText").innerHTML = `
     <p><strong>${escapeHtml(hint.intent)}</strong> · 置信度 ${Math.round((hint.confidence || 0) * 100)}%</p>
     <p>${escapeHtml(hint.interaction_analysis || hint.summary)}</p>
-    ${payload.llm_enabled ? "" : "<p class='warning'>未配置 Vision API Key，当前为本地知识库匹配与规则分析。</p>"}
+    <p class='warning'>本工具不调用外部识图 API；需要深度看图时，复制 Codex 分析包交给当前 Codex 处理。</p>
   `;
   $("#replyText").value = state.lastReply;
+  $("#codexText").value = state.codexHandoff;
   $("#matchList").innerHTML = (hint.matched_entries || []).map((match) => `
     <article class="match-item">
       <strong>${escapeHtml(match.entry.title)}</strong>
@@ -100,6 +104,16 @@ async function copyReply() {
   setStatus("回复已复制。");
 }
 
+async function copyCodexHandoff() {
+  const text = $("#codexText").value || state.codexHandoff;
+  if (!text.trim()) {
+    setStatus("没有 Codex 分析包。");
+    return;
+  }
+  await navigator.clipboard.writeText(text);
+  setStatus("Codex 分析包已复制。");
+}
+
 function initUpload() {
   const input = $("#imageInput");
   const dropZone = $("#dropZone");
@@ -124,6 +138,7 @@ function init() {
   initUpload();
   $("#analyzeBtn").addEventListener("click", () => analyzeImage().catch((error) => setStatus(error.message)));
   $("#copyReplyBtn").addEventListener("click", () => copyReply().catch((error) => setStatus(error.message)));
+  $("#copyCodexBtn").addEventListener("click", () => copyCodexHandoff().catch((error) => setStatus(error.message)));
   $("#feedForm").addEventListener("submit", (event) => feedKnowledge(event).catch((error) => {
     $("#feedStatus").textContent = error.message;
   }));

@@ -14,7 +14,7 @@
           <div class="mark">窗</div>
           <div>
             <h1>门窗识图顾问工具</h1>
-            <p>仓库知识库 · 上传识图 · 快捷回复复制</p>
+            <p>仓库知识库 · 本地打包 · Codex 深度分析</p>
           </div>
         </div>
 
@@ -53,11 +53,12 @@
         <header class="topbar">
           <div>
             <h2>识图工作台</h2>
-            <p>上传截面、样角、报价或现场图，先识别结构，再生成能发给客户的回复。</p>
+            <p>上传图片后本地保存、检索知识并生成交给 Codex 的分析包，不调用外部识图 API。</p>
           </div>
           <div class="top-actions">
             <button id="analyzeBtn">识图分析</button>
             <button id="copyReplyBtn">复制回复</button>
+            <button id="copyCodexBtn">复制给 Codex</button>
           </div>
         </header>
 
@@ -81,6 +82,10 @@
             <section class="result-block">
               <h3>可复制回复</h3>
               <textarea id="replyText" readonly></textarea>
+            </section>
+            <section class="result-block">
+              <h3>Codex 分析包</h3>
+              <textarea id="codexText" readonly></textarea>
             </section>
             <section class="result-block">
               <h3>知识命中</h3>

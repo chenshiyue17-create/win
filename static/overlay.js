@@ -53,7 +53,7 @@ function renderHints(hints) {
         </div>
         
         <div class="card-section analysis-box">
-          <span class="section-label">智能分析 (Gemini)</span>
+          <span class="section-label">本地分析</span>
           <div class="analysis-text">${escapeHtml(hint.interaction_analysis || hint.summary)}</div>
         </div>
 
@@ -86,7 +86,7 @@ window.copyReply = (el) => {
 
 async function analyzeText() {
   if (!inputText.value.trim()) return;
-  statusText.textContent = "AI 正在思考...";
+  statusText.textContent = "正在本地分析...";
   try {
       const recognized = await requestJson("/api/recognize-text", {
         method: "POST",

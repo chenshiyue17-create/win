@@ -47,18 +47,9 @@ class AssistantConfig:
 
 
 @dataclass(frozen=True)
-class LLMConfig:
-    api_key: str
-    base_url: str
-    model: str
-    temperature: float
-
-
-@dataclass(frozen=True)
 class Settings:
     root: Path
     app: AppConfig
-    llm: LLMConfig
     knowledge_base: KnowledgeConfig
     recognition: RecognitionConfig
     assistant: AssistantConfig
@@ -104,7 +95,6 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
 
     data: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     app = data.get("app", {})
-    llm = data.get("llm", {})
     kb = data.get("knowledge_base", {})
     rec = data.get("recognition", {})
     assistant = data.get("assistant", {})
@@ -116,12 +106,6 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
             host=os.getenv("CUSTOMER_ASSISTANT_HOST", str(app.get("host", "127.0.0.1"))),
             port=int(os.getenv("CUSTOMER_ASSISTANT_PORT", app.get("port", 8787))),
             log_file=_as_path(PROJECT_ROOT, str(app.get("log_file", "logs/app.log"))),
-        ),
-        llm=LLMConfig(
-            api_key=str(os.environ.get("LLM_API_KEY", llm.get("api_key", ""))),
-            base_url=str(os.environ.get("LLM_BASE_URL", llm.get("base_url", "https://api.openai.com/v1"))),
-            model=str(os.environ.get("LLM_MODEL", llm.get("model", "gpt-4o-mini"))),
-            temperature=float(os.environ.get("LLM_TEMPERATURE", llm.get("temperature", 0.2))),
         ),
         knowledge_base=KnowledgeConfig(
             source_file=_as_path(PROJECT_ROOT, str(kb.get("source_file", "data/knowledge_base.json"))),

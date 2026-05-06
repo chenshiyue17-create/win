@@ -6,8 +6,6 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-import httpx
-from customer_context_assistant.config import LLMConfig
 from customer_context_assistant.knowledge_base import KnowledgeBase, tokenize
 from customer_context_assistant.models import KnowledgeEntry, KnowledgeMatch, KnowledgeVersion, LearningCandidate, MessageInput
 
@@ -67,9 +65,8 @@ def candidate_title(text: str, tags: list[str]) -> str:
 
 
 class LearningQueue:
-    def __init__(self, queue_file: Path, llm_config: LLMConfig | None = None) -> None:
+    def __init__(self, queue_file: Path) -> None:
         self.queue_file = queue_file
-        self.llm_config = llm_config
         self.queue_file.parent.mkdir(parents=True, exist_ok=True)
         if not self.queue_file.exists():
             self._persist([])
@@ -136,30 +133,15 @@ class LearningQueue:
         entry_id = "learn-" + slugify_text("-".join(tags) + "-" + text)
         created_at = now_iso()
 
-        # 如果配置了 API Key，尝试使用 LLM 生成更专业的草稿
-        suggested_entry = None
-        if self.llm_config and self.llm_config.api_key:
-            try:
-                suggested_entry = self._generate_with_llm(text, tags, reason)
-            except Exception as exc:
-                LOGGER.warning(f"LLM 知识点生成失败: {exc}")
-
-        if not suggested_entry:
-            suggested_entry = KnowledgeEntry(
-                id=entry_id,
-                title=candidate_title(text, tags),
-                content=f"来自{source}互动的待确认知识点：{text}",
-                tags=tags,
-                image_path="/static/assets/window-system.svg",
-                reply_templates=[f"这个问题我先确认具体场景：{text[:40]}。建议结合楼层、尺寸、预算和使用痛点再给配置。"],
-                version=KnowledgeVersion(version="0.1.0", updated_at=created_at, updated_by="learning_queue", change_note=reason),
-            )
-        else:
-            # 确保 ID 和版本信息正确
-            suggested_entry = suggested_entry.model_copy(update={
-                "id": entry_id,
-                "version": KnowledgeVersion(version="0.1.0", updated_at=created_at, updated_by="llm-ai", change_note=reason)
-            })
+        suggested_entry = KnowledgeEntry(
+            id=entry_id,
+            title=candidate_title(text, tags),
+            content=f"来自{source}互动的待确认知识点：{text}",
+            tags=tags,
+            image_path="/static/assets/window-system.svg",
+            reply_templates=[f"这个问题我先确认具体场景：{text[:40]}。建议结合楼层、尺寸、预算和使用痛点再给配置。"],
+            version=KnowledgeVersion(version="0.1.0", updated_at=created_at, updated_by="learning_queue", change_note=reason),
+        )
 
         return LearningCandidate(
             id=entry_id,
@@ -170,50 +152,6 @@ class LearningQueue:
             related_matches=matches,
             created_at=created_at,
         )
-
-    def _generate_with_llm(self, text: str, tags: list[str], reason: str) -> KnowledgeEntry | None:
-        prompt = f"""你是一个门窗行业的资深技术专家和售前顾问。
-请根据以下客户的咨询内容，总结出一个结构化的“知识库条目”。
-
-客户咨询：{text}
-已识别标签：{", ".join(tags)}
-学习原因：{reason}
-
-请输出 JSON 格式，包含以下字段：
-- title: 知识条目的标题（专业且简练）
-- content: 知识点的详细解释（通俗易懂但专业，100-200字）
-- tags: 相关的关键词标签列表
-- reply_templates: 建议客服回复该问题的 1-2 条话术模板
-
-注意：只需输出 JSON 内容。
-"""
-        headers = {
-            "Authorization": f"Bearer {self.llm_config.api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": self.llm_config.model,
-            "messages": [
-                {"role": "system", "content": "你是一个专业的门窗专家。"},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": self.llm_config.temperature,
-            "response_format": {"type": "json_object"}
-        }
-        
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(f"{self.llm_config.base_url}/chat/completions", json=payload, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            return KnowledgeEntry(
-                id="temp",
-                title=parsed.get("title", ""),
-                content=parsed.get("content", ""),
-                tags=parsed.get("tags", tags),
-                reply_templates=parsed.get("reply_templates", [])
-            )
 
     def _reason_for_learning(self, text: str, matches: list[KnowledgeMatch]) -> str:
         if not matches:

@@ -4,12 +4,6 @@ app:
   port: 8787
   log_file: "logs/app.log"
 
-llm:
-  api_key: ""
-  base_url: "https://api.openai.com/v1"
-  model: "gpt-4o-mini"
-  temperature: 0.2
-
 knowledge_base:
   source_file: "data/knowledge_base.json"
   seed_file: "tasks/knowledge_base.seed.json"

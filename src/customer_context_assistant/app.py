@@ -52,6 +52,41 @@ def _safe_upload_name(filename: str | None) -> str:
     return f"{uuid4().hex}{suffix}"
 
 
+def _build_codex_handoff(
+    *,
+    image_path: Path,
+    question: str,
+    recognized_text: str,
+    matches: list,
+) -> str:
+    match_lines = []
+    for index, match in enumerate(matches[:6], start=1):
+        entry = match.entry
+        preview = " ".join(entry.content.split())[:360]
+        match_lines.append(f"{index}. {entry.title}｜得分 {match.score}｜标签：{', '.join(entry.tags[:8])}\n   {preview}")
+    knowledge = "\n".join(match_lines) if match_lines else "暂无明显知识命中。"
+    return "\n".join(
+        [
+            "请把下面内容交给 Codex，并使用 menchuang-image-consultant skill 深度分析这张门窗图片。",
+            "",
+            f"图片路径：{image_path}",
+            f"客户问题：{question or '帮我看这张门窗图片，判断结构优缺点、品牌线索、价格和追问清单。'}",
+            f"OCR文本：{recognized_text or '无可用 OCR 文本，以图片视觉结构为主。'}",
+            "",
+            "仓库知识命中：",
+            knowledge,
+            "",
+            "输出要求：",
+            "1. 先识别图片类型和室内外方向，不确定就说明。",
+            "2. 逐项看主框、副框、玻扇、压线、隔热条、胶条、玻璃入槽、五金位。",
+            "3. 分析承重、隔热、水密、气密、工艺售后四条路径。",
+            "4. 品牌只能说疑似/像/有某类线索，除非图上有直接证据。",
+            "5. 价格要结合安装、开扇、运费、吊装、玻璃增配，不要绝对化。",
+            "6. 最后给一段能直接复制给客户的中文回复。",
+        ]
+    )
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings()
     configure_logging(settings.app.log_file)
@@ -64,8 +99,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         backup_dir=settings.knowledge_base.backup_dir,
         min_entries=settings.knowledge_base.min_entries,
     )
-    engine = AssistantEngine(kb, settings.knowledge_base, settings.assistant, llm_config=settings.llm)
-    learning_queue = LearningQueue(settings.root / "data" / "learning_queue.json", llm_config=settings.llm)
+    engine = AssistantEngine(kb, settings.knowledge_base, settings.assistant)
+    learning_queue = LearningQueue(settings.root / "data" / "learning_queue.json")
     interaction_store = InteractionStore(settings.root / "data" / "interactions")
     conversation_store = ConversationStore(settings.root / "data" / "conversations.json")
     app = FastAPI(title=settings.app.name)
@@ -246,6 +281,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 image_bytes=data,
             )
         )
+        matches = response.hints[0].matched_entries if response.hints else []
+        codex_handoff = _build_codex_handoff(
+            image_path=upload_path,
+            question=question,
+            recognized_text=recognized_text,
+            matches=matches,
+        )
         interaction_store.append(
             source="api_vision_analyze",
             input_type="image",
@@ -261,7 +303,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "recognition": recognition.model_dump(),
             "upload_path": str(upload_path),
             "knowledge_status": kb.status().model_dump(),
-            "llm_enabled": bool(settings.llm.api_key),
+            "codex_handoff": codex_handoff,
+            "local_only": True,
         }
 
     @app.post("/api/harvest-url", response_model=RecognitionResponse)
