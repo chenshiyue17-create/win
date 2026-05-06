@@ -1,55 +1,94 @@
-# 门窗售前顾问助手 (Gemini 智能增强版)
+# 门窗识图顾问工具
 
-本地运行的门窗售前客服辅助工具。现在的版本已由 **Gemini 1.5 Flash** 深度驱动，支持结合本地知识库的智能分析与评论区自动化采集。
+一个本地运行、可投喂知识、可上传图片识别、可生成快捷回复的门窗顾问工作台。知识库已经内置到仓库 `data/`，不再依赖 `/Users/cc/Desktop/门窗知识库` 这类本机路径。
 
-## 核心功能 (2026-05-02 更新)
+## 已实现
 
-- **Gemini RAG 分析**：系统不再仅仅进行关键词匹配，而是利用 Gemini 结合您的“实战知识库”和对话上下文，生成既专业又具有引导性的回复建议。
-- **评论区对话采集**：专门适配小红书等平台的评论区截图。能够自动识别评论层级，将各路大神的经验或客户的疑问一键提取，自动转化为您的专属知识库。
-- **知识库自动学习**：遇到新问题时，Gemini 会自动为您总结知识点草稿，包括标题、专业内容、标签和话术模板，您只需在训练台中点击“通过”即可完成入库。
-- **原生悬浮窗口**：通过 `floating_region_assistant.py` 启动，支持全局截图识别和剪贴板自动分析。
+- 上传截面图、样角图、报价图、玻璃爆裂图，生成结构分析和可复制回复。
+- 知识投喂入口：标题、标签、图文内容、回复模板、配图一并入库。
+- 仓库内置知识库：`data/knowledge_base.json`、`data/knowledge/*.md`。
+- 安全备份：每次写入会先备份到 `data/kb_backups`。
+- Vision API 可选：配置 `LLM_API_KEY` 后走 OpenAI-compatible 图像分析；不配置也能用本地知识库和规则降级分析。
+- 保留原训练台、悬浮窗、评论采集和对话蒸馏接口。
 
-## 配置 LLM 引擎
-
-要激活 AI 增强功能，请编辑根目录下的 `config.yaml`：
-
-```yaml
-llm:
-  api_key: "您的 Gemini API Key"
-  base_url: "https://generativelanguage.googleapis.com/v1beta/openai/"
-  model: "gemini-1.5-flash"
-```
-
-*注：如果没有 API Key，工具仍将回退到本地话术模板模式运行。*
-
-## 启动方式
+## 启动
 
 ```bash
-# 方式 A：原生悬浮助手（推荐，最新功能）
-export PYTHONPATH=src
-python3 floating_region_assistant.py
-
-# 方式 B：网页版管理后台
-export PYTHONPATH=src
-python3 main.py
+cd /Users/cc/Documents/New\ project\ 2/win
+python3 -m pip install -r requirements.txt
+PYTHONPATH=src python3 main.py
 ```
 
-## 开发接力 (Codex)
+如果 `8787` 端口被占用：
 
-详细的工程进度和后续待办事项请参考：`CODEX_TASK.md`。
+```bash
+CUSTOMER_ASSISTANT_PORT=8791 PYTHONPATH=src python3 main.py
+```
 
----
-
-## 目录结构
+打开：
 
 ```text
-customer_context_assistant/
-  config.yaml
-  main.py
-  requirements.txt
-  src/customer_context_assistant/
-  static/
-  tasks/
-  tests/
-  data/
+http://127.0.0.1:8787
 ```
+
+## 配置识图模型
+
+复制 `.env.example` 或直接导出环境变量：
+
+```bash
+export LLM_API_KEY="你的 Key"
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_MODEL="gpt-4o-mini"
+PYTHONPATH=src python3 main.py
+```
+
+也可以编辑 `config.yaml`，但不要把真实 Key 提交到 GitHub。
+
+## API
+
+```bash
+# 健康检查
+curl http://127.0.0.1:8787/api/health
+
+# 知识库检索
+curl -X POST http://127.0.0.1:8787/api/kb/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"富轩青龙压线结构 799","limit":3}'
+
+# 图片识别分析
+curl -X POST http://127.0.0.1:8787/api/vision/analyze \
+  -F 'file=@/absolute/path/to/window.webp' \
+  -F 'question=帮我看这个截面结构怎么样'
+```
+
+## 测试
+
+```bash
+cd /Users/cc/Documents/New\ project\ 2/win
+python3 -m pytest
+```
+
+当前基础测试覆盖：配置读取、知识库恢复和备份、知识投喂、图片分析接口、客服分析、训练队列、对话记录、GitHub 归档、桌面包检查。
+
+## 目录
+
+```text
+config.yaml
+data/
+  knowledge/
+  knowledge_base.json
+  learning_queue.json
+src/customer_context_assistant/
+static/
+tasks/
+tests/
+logs/
+output/
+```
+
+## 失败排查
+
+- 页面不是本工具：说明 `8787` 被其他服务占用，用 `CUSTOMER_ASSISTANT_PORT=8791` 启动。
+- 上传识图只有规则分析：说明未配置 `LLM_API_KEY`。
+- OCR 没识别文字：图片太干净或系统缺少 OCR 环境，Vision API 仍可基于图像本身分析。
+- 知识库损坏：从 `data/kb_backups` 自动恢复，或回退到 `tasks/knowledge_base.seed.json`。

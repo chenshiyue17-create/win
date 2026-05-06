@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>门窗售前顾问助手</title>
+    <title>门窗识图顾问工具</title>
     <link rel="icon" href="/static/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
@@ -11,56 +11,81 @@
     <main class="shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="mark">C</div>
+          <div class="mark">窗</div>
           <div>
-            <h1>门窗售前顾问助手</h1>
-            <p>门窗知识库 · 客户消息识别 · 售前话术提示</p>
+            <h1>门窗识图顾问工具</h1>
+            <p>仓库知识库 · 上传识图 · 快捷回复复制</p>
           </div>
         </div>
 
         <section class="panel">
           <div class="panel-head">
-            <h2>窗口识别</h2>
-            <span id="recognitionStatus">待输入</span>
+            <h2>知识库状态</h2>
+            <span id="kbCount">读取中</span>
           </div>
-          <textarea id="windowText" spellcheck="false">客户：我家临街，想换断桥铝或者系统窗，主要想隔音好一点。
-客服：您好，我先了解一下您家窗户情况。
-客户：铝材壁厚和玻璃怎么选？大概多少钱一平方？</textarea>
+          <p id="kbSource">知识库内置在项目 data/，不依赖桌面本地路径。</p>
           <div class="actions">
-            <button id="recognizeTextBtn">识别文本</button>
-            <label class="file-button">
-              上传截图
-              <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
-            </label>
+            <a class="button-link" href="/kb-trainer" target="_blank">训练台</a>
+            <button id="backupBtn">安全备份</button>
           </div>
-          <p class="hint-line" id="recognitionWarnings"></p>
         </section>
 
-        <section class="panel kb-panel">
+        <section class="panel">
           <div class="panel-head">
-            <h2>图文知识库</h2>
-            <span id="kbCount">0 条</span>
+            <h2>投喂知识</h2>
+            <span id="feedStatus">就绪</span>
           </div>
-          <div id="kbList" class="kb-list"></div>
+          <form id="feedForm" class="feed-form">
+            <label>标题<input name="title" placeholder="例如：富轩青龙压线结构判断" required /></label>
+            <label>标签<input name="tags" placeholder="品牌, 截面, 压线, 价格" /></label>
+            <label>知识内容<textarea name="content" placeholder="粘贴评论图文回复、结构判断、价格经验、品牌线索..." required></textarea></label>
+            <label>快捷回复<textarea name="reply_template" placeholder="可直接复制给客户的话术，每行一条"></textarea></label>
+            <label class="file-button">
+              上传配图
+              <input name="file" type="file" accept="image/png,image/jpeg,image/webp" />
+            </label>
+            <button type="submit">入库</button>
+          </form>
         </section>
       </aside>
 
       <section class="workspace">
         <header class="topbar">
           <div>
-            <h2>会话工作台</h2>
-            <p>像网页翻译一样，在每条门窗售前咨询旁显示专业提示。</p>
+            <h2>识图工作台</h2>
+            <p>上传截面、样角、报价或现场图，先识别结构，再生成能发给客户的回复。</p>
           </div>
           <div class="top-actions">
-            <a href="/kb-trainer">训练知识库</a>
-            <button id="analyzeBtn">生成旁边提示</button>
+            <button id="analyzeBtn">识图分析</button>
+            <button id="copyReplyBtn">复制回复</button>
           </div>
         </header>
 
-        <div class="chat-layout">
-          <div id="messageList" class="message-list"></div>
-          <aside id="hintRail" class="hint-rail">
-            <div class="empty-state">识别窗口内容后，提示会贴在对应消息旁边。</div>
+        <div class="work-grid">
+          <section class="image-zone">
+            <label id="dropZone" class="drop-zone">
+              <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+              <span>拖入或点击上传门窗图片</span>
+              <small>支持截面图、报价截图、玻璃爆裂图、现场安装图</small>
+            </label>
+            <img id="preview" alt="" hidden />
+            <textarea id="question" placeholder="客户原话或你的分析要求，例如：帮我判断品牌线索、结构优缺点、价格是否合理。">帮我看这张门窗图片，判断结构优缺点、品牌线索、价格和需要追问商家的配置。</textarea>
+            <p id="statusLine" class="hint-line"></p>
+          </section>
+
+          <aside class="result-zone">
+            <section class="result-block">
+              <h3>结构分析</h3>
+              <div id="analysisText" class="prose empty-state">上传图片后生成。</div>
+            </section>
+            <section class="result-block">
+              <h3>可复制回复</h3>
+              <textarea id="replyText" readonly></textarea>
+            </section>
+            <section class="result-block">
+              <h3>知识命中</h3>
+              <div id="matchList" class="match-list"></div>
+            </section>
           </aside>
         </div>
       </section>

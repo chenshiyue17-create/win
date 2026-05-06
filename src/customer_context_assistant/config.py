@@ -120,8 +120,8 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
         llm=LLMConfig(
             api_key=str(os.environ.get("LLM_API_KEY", llm.get("api_key", ""))),
             base_url=str(os.environ.get("LLM_BASE_URL", llm.get("base_url", "https://api.openai.com/v1"))),
-            model=str(llm.get("model", "gpt-4o-mini")),
-            temperature=float(llm.get("temperature", 0.7)),
+            model=str(os.environ.get("LLM_MODEL", llm.get("model", "gpt-4o-mini"))),
+            temperature=float(os.environ.get("LLM_TEMPERATURE", llm.get("temperature", 0.2))),
         ),
         knowledge_base=KnowledgeConfig(
             source_file=_as_path(PROJECT_ROOT, str(kb.get("source_file", "data/knowledge_base.json"))),

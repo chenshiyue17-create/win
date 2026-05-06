@@ -116,7 +116,7 @@ class AssistantEngine:
         if context:
             summary = f"结合本客户最近 {len(context)} 条上下文：" + summary
 
-        # 尝试使用 Gemini 增强分析
+        # 尝试使用 OpenAI-compatible Vision 模型增强分析。
         interaction_analysis = ""
         suggested_reply = ""
         
@@ -126,7 +126,7 @@ class AssistantEngine:
                     message, context, matches, warnings, image_bytes=request.image_bytes
                 )
             except Exception as exc:
-                LOGGER.warning(f"Gemini 分析失败，降级到本地逻辑: {exc}")
+                LOGGER.warning("Vision LLM 分析失败，降级到本地逻辑: %s", exc)
 
         if not suggested_reply:
             interaction_analysis = build_interaction_analysis(message, context, matches, warnings)
@@ -148,7 +148,7 @@ class AssistantEngine:
         )
 
     def _analyze_with_gemini(self, message: MessageInput, context: list[MessageInput], matches: list, warnings: list[str], image_bytes: bytes | None = None) -> tuple[str, str]:
-        """利用 Gemini 结合本地知识库和图片内容生成回复"""
+        """利用 OpenAI-compatible Vision 接口结合仓库知识库和图片生成回复。"""
         import base64
         
         context_str = "\n".join([f"{m.sender}: {m.text}" for m in context])
@@ -156,15 +156,15 @@ class AssistantEngine:
         if matches:
             kb_context = "\n\n".join([f"【知识点: {m.entry.title}】\n内容: {m.entry.content}\n建议话术参考: {', '.join(m.entry.reply_templates)}" for m in matches])
 
-        prompt = f"""你是一个顶级的门窗技术专家，擅长通过型材样角截面识别品牌和性能。
+        prompt = f"""你是一个严谨的门窗技术顾问，擅长通过断桥铝/系统窗型材截面、现场图、报价图分析结构和风险。
 
 1. 任务要求：
-- 如果提供了图片，请仔细观察型材的“截面结构”。
-- 分析：腔体数量、隔热条形状(PA66)、密封道数、型材壁厚感官。
-- 识别品牌：尝试识别这是否为 旭格、维诺斯盾、轩尼斯、希美克、派雅、皇派、新豪轩等知名品牌或其仿品。
-- 每个品牌的腔体槽位和等温线设计是独特的，请指出其结构优劣。
+- 如果提供了图片，先观察型材截面或现场可见结构，不要只做关键词拼接。
+- 分析：主框/副框/玻扇、压线是否可拆、隔热条是否连续、胶条搭接、承重路径、水密气密路径、玻璃配置和安装风险。
+- 品牌判断只能说“疑似/像/有某类结构线索”，除非图片里有 logo、报价单或喷码证据。
+- 价格判断必须结合配置、面积、开扇、安装、运费、吊装、玻璃增配和城市，不要绝对化。
 
-2. 本地知识库参考：
+2. 仓库内置知识库参考：
 {kb_context or "未匹配到特定本地知识，请基于您的行业大脑回答。"}
 
 3. 对话上下文：
@@ -175,8 +175,8 @@ class AssistantEngine:
 {'5. 风险警告：' + ', '.join(warnings) if warnings else ''}
 
 请输出 JSON：
-- interaction_analysis: 深度结构分析+品牌识别结论（如果是样角，必须指出结构特征）。
-- suggested_reply: 给客户的专业建议。
+- interaction_analysis: 深度结构分析、品牌线索、价格与风险判断；必须说明证据和置信度。
+- suggested_reply: 可以直接复制给客户的中文回复，专业但口语化。
 """
         messages = [
             {"role": "system", "content": "你是一个严谨的门窗样角识别专家。"},
@@ -204,8 +204,9 @@ class AssistantEngine:
             "response_format": {"type": "json_object"}
         }
         
-        with httpx.Client(timeout=25.0) as client:
-            resp = client.post(f"{self.llm_config.base_url}/chat/completions", json=payload, headers=headers)
+        base_url = self.llm_config.base_url.rstrip("/")
+        with httpx.Client(timeout=45.0) as client:
+            resp = client.post(f"{base_url}/chat/completions", json=payload, headers=headers)
             resp.raise_for_status()
             data = resp.json()
             content = data["choices"][0]["message"]["content"]

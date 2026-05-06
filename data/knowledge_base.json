@@ -508,6 +508,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗品牌结构画像",
@@ -515,7 +516,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-brand-series-profiles",
@@ -531,6 +539,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗品牌系列二级画像",
@@ -538,7 +547,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-case-studies",
@@ -554,6 +570,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗评论图文案例",
@@ -561,7 +578,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-consultant-playbook",
@@ -576,6 +600,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗资深顾问决策手册",
@@ -583,7 +608,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-distilled-knowledge",
@@ -600,6 +632,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗图文知识完全蒸馏",
@@ -607,7 +640,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-knowledge-summary",
@@ -622,6 +662,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗知识库摘要",
@@ -629,7 +670,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-section-index",
@@ -647,6 +695,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "截面结构优先索引",
@@ -654,7 +703,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     },
     {
       "id": "menchuang-visual-sample-library",
@@ -671,6 +727,7 @@
       "reply_templates": [
         "我先按图片里的结构证据判断，不直接按品牌名下结论；重点看主框/副框/玻扇、压线、隔热条、胶条搭接和报价包含项。"
       ],
+      "links": [],
       "attachments": [
         {
           "label": "门窗图文视觉样本库",
@@ -678,7 +735,14 @@
           "type": "markdown",
           "note": "仓库内置蒸馏知识，不依赖本机桌面路径。"
         }
-      ]
+      ],
+      "tables": [],
+      "version": {
+        "version": "1.0.0",
+        "updated_at": null,
+        "updated_by": "local",
+        "change_note": ""
+      }
     }
   ]
 }

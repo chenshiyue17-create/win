@@ -8,11 +8,16 @@ ENV/
 env/
 
 # Config & Secrets
-config.yaml
 .env
 
 # Data & Logs
 data/
+!data/
+data/*
+!data/knowledge/
+!data/knowledge/**
+!data/knowledge_base.json
+!data/learning_queue.json
 logs/
 output/
 dist/

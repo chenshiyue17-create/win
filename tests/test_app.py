@@ -1,4 +1,6 @@
 from fastapi.testclient import TestClient
+from io import BytesIO
+from PIL import Image
 from uuid import uuid4
 
 from customer_context_assistant.app import create_app
@@ -187,3 +189,33 @@ def test_conversation_api_returns_customer_radar() -> None:
     assert radar["需求清晰"] > 0
     assert radar["预算敏感"] > 0
     assert radar["成交紧迫"] > 0
+
+
+def test_feed_knowledge_and_vision_image_endpoint() -> None:
+    client = TestClient(create_app())
+    feed = client.post(
+        "/api/kb/feed",
+        data={
+            "title": "测试截面投喂",
+            "content": "玻扇压线可拆、隔热条连续、需要追问五金和胶条品牌。",
+            "tags": "截面,压线,隔热条",
+            "reply_template": "这款先看压线和隔热条路径，再谈价格。",
+            "source_note": "unit-test",
+        },
+    )
+    assert feed.status_code == 200
+    assert feed.json()["entry"]["title"] == "测试截面投喂"
+
+    image = Image.new("RGB", (64, 48), "white")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    response = client.post(
+        "/api/vision/analyze",
+        data={"question": "帮我看这个门窗截面结构怎么样", "session_id": "vision-test"},
+        files={"file": ("section.png", buffer.getvalue(), "image/png")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["analysis"]["hints"]
+    assert payload["upload_path"].endswith(".png")
+    assert "knowledge_status" in payload

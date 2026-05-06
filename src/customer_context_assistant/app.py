@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Optional
+from uuid import uuid4
 
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -22,6 +24,7 @@ from customer_context_assistant.models import (
     ConversationSession,
     InteractionLogResponse,
     KnowledgeBatch,
+    KnowledgeAttachment,
     KnowledgeEntry,
     KnowledgeImportResponse,
     KnowledgeSearchRequest,
@@ -29,13 +32,24 @@ from customer_context_assistant.models import (
     LearningIngestRequest,
     LearningQueueResponse,
     LearningReviewRequest,
+    MessageInput,
     RecognitionResponse,
 )
 from customer_context_assistant.recognizer import latest_customer_messages, recognize_image_payload, recognize_text_payload
-from customer_context_assistant.web_harvester import harvest_comments_from_url
+try:
+    from customer_context_assistant.web_harvester import harvest_comments_from_url
+except ModuleNotFoundError:
+    harvest_comments_from_url = None
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _safe_upload_name(filename: str | None) -> str:
+    suffix = Path(filename or "upload.bin").suffix.lower()
+    if suffix not in {".png", ".jpg", ".jpeg", ".webp"}:
+        suffix = ".png"
+    return f"{uuid4().hex}{suffix}"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -57,6 +71,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title=settings.app.name)
     static_dir = settings.root / "static"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    knowledge_assets_dir = settings.root / "data" / "knowledge_assets"
+    knowledge_assets_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/knowledge-assets", StaticFiles(directory=knowledge_assets_dir), name="knowledge-assets")
 
     @app.get("/")
     def index() -> FileResponse:
@@ -117,6 +134,52 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return KnowledgeImportResponse(total=len(entries), created=created, updated=updated, entries=entries)
 
+    @app.post("/api/kb/feed")
+    async def feed_knowledge(
+        title: str = Form(...),
+        content: str = Form(...),
+        tags: str = Form(""),
+        reply_template: str = Form(""),
+        source_note: str = Form("manual"),
+        file: Optional[UploadFile] = File(None),
+    ) -> dict[str, object]:
+        if not title.strip() or not content.strip():
+            raise HTTPException(status_code=400, detail="title and content are required")
+
+        asset_path = ""
+        attachments: list[KnowledgeAttachment] = []
+        if file and file.filename:
+            data = await file.read()
+            max_bytes = settings.recognition.max_upload_mb * 1024 * 1024
+            if len(data) > max_bytes:
+                raise HTTPException(status_code=400, detail=f"File is larger than {settings.recognition.max_upload_mb} MB")
+            upload_dir = settings.root / "data" / "knowledge_assets"
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            safe_name = _safe_upload_name(file.filename)
+            saved = upload_dir / safe_name
+            saved.write_bytes(data)
+            asset_path = f"/knowledge-assets/{safe_name}"
+            attachments.append(
+                KnowledgeAttachment(
+                    label=file.filename,
+                    path=str(saved.relative_to(settings.root)),
+                    type=file.content_type or "file",
+                    note="通过投喂入口上传的知识素材",
+                )
+            )
+
+        entry = KnowledgeEntry(
+            id=f"feed-{uuid4().hex[:12]}",
+            title=title.strip(),
+            content=f"{content.strip()}\n\n来源备注：{source_note.strip() or 'manual'}",
+            tags=[item.strip() for item in tags.replace("，", ",").split(",") if item.strip()],
+            image_path=asset_path or "/static/assets/window-system.svg",
+            reply_templates=[line.strip() for line in reply_template.splitlines() if line.strip()],
+            attachments=attachments,
+        )
+        saved, created = kb.upsert_entry(entry)
+        return {"entry": saved.model_dump(), "created": created, "knowledge_status": kb.status().model_dump()}
+
     @app.post("/api/kb/search")
     def search_kb(request: KnowledgeSearchRequest) -> dict[str, object]:
         if not request.query.strip():
@@ -148,8 +211,63 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.post("/api/vision/analyze")
+    async def analyze_image(
+        file: UploadFile = File(...),
+        question: str = Form(""),
+        session_id: str = Form("default"),
+        learn: bool = Form(False),
+    ) -> dict[str, object]:
+        if file.content_type not in settings.recognition.allowed_image_types:
+            raise HTTPException(status_code=400, detail="Only png, jpeg, or webp images are supported")
+        data = await file.read()
+        max_bytes = settings.recognition.max_upload_mb * 1024 * 1024
+        if len(data) > max_bytes:
+            raise HTTPException(status_code=400, detail=f"Image is larger than {settings.recognition.max_upload_mb} MB")
+
+        upload_dir = settings.root / "data" / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        safe_name = _safe_upload_name(file.filename)
+        upload_path = upload_dir / safe_name
+        upload_path.write_bytes(data)
+
+        recognition = recognize_image_payload(data, settings.recognition.ocr_language)
+        recognized_text = recognition.text.strip()
+        combined_text = "\n".join(part for part in [question.strip(), recognized_text] if part)
+        if not combined_text:
+            combined_text = "客户上传了一张门窗/断桥铝/系统窗图片，请按图片结构分析。"
+        messages = [MessageInput(id="image-1", sender="customer", text=combined_text)]
+        response = engine.analyze(
+            AnalyzeRequest(
+                messages=messages,
+                include_safety=True,
+                learn=learn,
+                session_id=session_id,
+                image_bytes=data,
+            )
+        )
+        interaction_store.append(
+            source="api_vision_analyze",
+            input_type="image",
+            raw_text=question,
+            ocr_text=recognized_text,
+            screenshot_path=upload_path,
+            messages=messages,
+            output=response,
+            metadata={"session_id": session_id, "filename": file.filename or ""},
+        )
+        return {
+            "analysis": response.model_dump(),
+            "recognition": recognition.model_dump(),
+            "upload_path": str(upload_path),
+            "knowledge_status": kb.status().model_dump(),
+            "llm_enabled": bool(settings.llm.api_key),
+        }
+
     @app.post("/api/harvest-url", response_model=RecognitionResponse)
     async def harvest_url(payload: dict) -> RecognitionResponse:
+        if harvest_comments_from_url is None:
+            raise HTTPException(status_code=503, detail="Playwright is not installed; URL harvesting is unavailable")
         url = payload.get("url")
         if not url:
             raise HTTPException(status_code=400, detail="URL is required")
