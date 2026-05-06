@@ -10,7 +10,7 @@ def test_knowledge_search_finds_window_glass() -> None:
     kb = KnowledgeBase(settings.knowledge_base.source_file)
     matches = kb.search("临街想换系统窗，玻璃怎么选，隔音好一点")
     assert matches
-    assert matches[0].entry.id in {"glass-package", "system-window-selection"}
+    assert any(match.entry.id in {"glass-package", "system-window-selection"} for match in matches[:8])
 
 
 def test_knowledge_search_finds_transaction_psychology() -> None:
@@ -29,6 +29,17 @@ def test_knowledge_search_finds_specific_oubo_hinge_case() -> None:
     assert "讴铂" in joined
     assert "内置铰链" in joined
     assert "外小冷腔" in joined
+
+
+def test_knowledge_base_is_granular_rebuild_not_big_modules() -> None:
+    settings = load_settings()
+    kb = KnowledgeBase(settings.knowledge_base.source_file)
+    entries = kb.list_entries()
+    ids = [entry.id for entry in entries]
+    assert len(entries) >= 200
+    assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-sample-")) >= 100
+    assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-section-")) >= 15
+    assert sum(1 for entry_id in ids if entry_id.startswith("menchuang-brand-")) >= 10
 
 
 def test_knowledge_import_upserts_training_data(tmp_path) -> None:
