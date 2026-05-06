@@ -11,6 +11,7 @@ def test_health_and_analyze() -> None:
     health = client.get("/api/health")
     assert health.status_code == 200
     assert health.json()["ok"] is True
+    assert "visual_entries" in health.json()
 
     overlay = client.get("/overlay")
     assert overlay.status_code == 200
@@ -219,8 +220,26 @@ def test_feed_knowledge_and_vision_image_endpoint() -> None:
     assert payload["analysis"]["hints"]
     assert payload["upload_path"].endswith(".png")
     assert "knowledge_status" in payload
+    assert "visual_matches" in payload
     assert payload["local_only"] is True
     assert "Codex" in payload["codex_handoff"]
+
+
+def test_vision_match_endpoint_accepts_image() -> None:
+    client = TestClient(create_app())
+    image = Image.new("RGB", (64, 48), "white")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    response = client.post(
+        "/api/vision/match",
+        data={"limit": "3"},
+        files={"file": ("section.png", buffer.getvalue(), "image/png")},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert "matches" in payload
+    assert "visual_entries" in payload
+    assert "图库视觉指纹" in payload["rule"]
 
 
 def test_structure_identify_endpoint_returns_brand_candidates() -> None:

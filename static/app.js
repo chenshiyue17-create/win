@@ -57,7 +57,7 @@ function renderAnalysis(payload) {
   $("#analysisText").innerHTML = `
     <p><strong>${escapeHtml(hint.intent)}</strong> · 置信度 ${Math.round((hint.confidence || 0) * 100)}%</p>
     <p>${escapeHtml(hint.interaction_analysis || hint.summary)}</p>
-    <p class='warning'>本工具不调用外部识图 API；需要深度看图时，复制 Codex 分析包交给当前 Codex 处理。</p>
+    <p class='warning'>本工具不调用外部识图 API；会先用本地图库视觉索引匹配相似截面，再把证据交给 Codex 深度判断。</p>
   `;
   $("#replyText").value = state.lastReply;
   $("#codexText").value = state.codexHandoff;
@@ -68,6 +68,17 @@ function renderAnalysis(payload) {
       <p>${escapeHtml((match.entry.content || "").slice(0, 130))}...</p>
     </article>
   `).join("") || "<div class='empty-state'>暂无知识命中。</div>";
+  const visualMatches = payload.visual_matches || [];
+  if (visualMatches.length) {
+    $("#matchList").innerHTML = visualMatches.map((match) => `
+      <article class="match-item">
+        <strong>${escapeHtml(match.entry.title)}</strong>
+        <span>图库相似度 ${Math.round((match.score || 0) * 100)}%</span>
+        <p>${escapeHtml((match.entry.brand_clues || []).join("、") || "无明确品牌线索")}</p>
+        <p>${escapeHtml((match.entry.author_replies || []).join(" ").slice(0, 150))}...</p>
+      </article>
+    `).join("") + $("#matchList").innerHTML;
+  }
 }
 
 async function analyzeImage() {

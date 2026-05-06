@@ -37,6 +37,7 @@ from customer_context_assistant.models import (
 )
 from customer_context_assistant.recognizer import latest_customer_messages, recognize_image_payload, recognize_text_payload
 from customer_context_assistant.structure_classifier import identify_brand_by_structure
+from customer_context_assistant.visual_index import VisualIndex
 try:
     from customer_context_assistant.web_harvester import harvest_comments_from_url
 except ModuleNotFoundError:
@@ -53,12 +54,19 @@ def _safe_upload_name(filename: str | None) -> str:
     return f"{uuid4().hex}{suffix}"
 
 
+def _is_allowed_image_upload(file: UploadFile, allowed_types: tuple[str, ...]) -> bool:
+    if file.content_type in allowed_types:
+        return True
+    return Path(file.filename or "").suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
+
+
 def _build_codex_handoff(
     *,
     image_path: Path,
     question: str,
     recognized_text: str,
     matches: list,
+    visual_matches: list,
 ) -> str:
     match_lines = []
     for index, match in enumerate(matches[:6], start=1):
@@ -66,6 +74,17 @@ def _build_codex_handoff(
         preview = " ".join(entry.content.split())[:360]
         match_lines.append(f"{index}. {entry.title}｜得分 {match.score}｜标签：{', '.join(entry.tags[:8])}\n   {preview}")
     knowledge = "\n".join(match_lines) if match_lines else "暂无明显知识命中。"
+    visual_lines = []
+    for index, match in enumerate(visual_matches[:5], start=1):
+        entry = match.entry
+        replies = " ".join(entry.author_replies)[:260] or "无作者回复摘录"
+        brands = "、".join(entry.brand_clues) or "无明确品牌线索"
+        visual_lines.append(
+            f"{index}. {entry.title}｜视觉相似度 {match.score:.2f}｜品牌线索：{brands}\n"
+            f"   原图：{entry.source_image}\n"
+            f"   作者回复：{replies}"
+        )
+    visual_knowledge = "\n".join(visual_lines) if visual_lines else "暂无图库视觉相似样本。"
     return "\n".join(
         [
             "请把下面内容交给 Codex，并使用 menchuang-image-consultant skill 深度分析这张门窗图片。",
@@ -74,6 +93,9 @@ def _build_codex_handoff(
             f"客户问题：{question or '帮我看这张门窗图片，判断结构优缺点、品牌线索、价格和追问清单。'}",
             f"OCR文本：{recognized_text or '无可用 OCR 文本，以图片视觉结构为主。'}",
             "",
+            "图库视觉相似样本：",
+            visual_knowledge,
+            "",
             "仓库知识命中：",
             knowledge,
             "",
@@ -81,12 +103,35 @@ def _build_codex_handoff(
             "1. 先识别图片类型和室内外方向，不确定就说明。",
             "2. 逐项看主框、副框、玻扇、压线、隔热条、胶条、玻璃入槽、五金位。",
             "3. 分析承重、隔热、水密、气密、工艺售后四条路径。",
-            "4. 如果知识命中含“品牌结构指纹”，必须先列出图上对应结构证据，再说疑似品牌/系列；不要用品牌词或价格词替代结构判断。",
+            "4. 先看图库视觉相似样本的截面结构，再看作者回复里的品牌/结构证据；不要让品牌词或价格词替代结构判断。",
             "5. 品牌只能说疑似/像/有某类线索，除非图上有直接商标、型材喷码或报价单证据。",
             "6. 价格要结合安装、开扇、运费、吊装、玻璃增配，不要绝对化。",
             "7. 最后给一段能直接复制给客户的中文回复。",
         ]
     )
+
+
+def _visual_matches_to_context(visual_matches: list) -> str:
+    if not visual_matches:
+        return ""
+    lines = ["图库视觉相似样本命中："]
+    for match in visual_matches[:5]:
+        entry = match.entry
+        replies = " ".join(entry.author_replies[:2])
+        lines.append(
+            "；".join(
+                part
+                for part in [
+                    f"{entry.title} 视觉相似度 {match.score:.2f}",
+                    f"品牌线索 {'、'.join(entry.brand_clues)}" if entry.brand_clues else "",
+                    f"知识模式 {'、'.join(entry.knowledge_modes[:4])}" if entry.knowledge_modes else "",
+                    f"客户问法 {entry.customer_question}" if entry.customer_question else "",
+                    f"作者回复 {replies}" if replies else "",
+                ]
+                if part
+            )
+        )
+    return "\n".join(lines)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -102,6 +147,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         min_entries=settings.knowledge_base.min_entries,
     )
     engine = AssistantEngine(kb, settings.knowledge_base, settings.assistant)
+    visual_index = VisualIndex.load(settings.root / "data" / "visual_index.json")
     learning_queue = LearningQueue(settings.root / "data" / "learning_queue.json")
     interaction_store = InteractionStore(settings.root / "data" / "interactions")
     conversation_store = ConversationStore(settings.root / "data" / "conversations.json")
@@ -126,7 +172,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health() -> dict[str, object]:
-        return {"ok": True, "entries": len(kb.list_entries())}
+        return {"ok": True, "entries": len(kb.list_entries()), "visual_entries": len(visual_index.entries)}
+
+    @app.post("/api/vision/match")
+    async def match_vision(file: UploadFile = File(...), limit: int = Form(5)) -> dict[str, object]:
+        if not _is_allowed_image_upload(file, settings.recognition.allowed_image_types):
+            raise HTTPException(status_code=400, detail="Only png, jpeg, or webp images are supported")
+        data = await file.read()
+        max_bytes = settings.recognition.max_upload_mb * 1024 * 1024
+        if len(data) > max_bytes:
+            raise HTTPException(status_code=400, detail=f"Image is larger than {settings.recognition.max_upload_mb} MB")
+        matches = visual_index.match_bytes(data, limit=max(1, min(limit, 20)))
+        return {
+            "matches": [match.to_dict() for match in matches],
+            "visual_entries": len(visual_index.entries),
+            "rule": "先用本地图库视觉指纹找相似截面图，再读取该图绑定的评论回复和品牌结构线索。",
+        }
 
     @app.post("/api/structure/identify")
     def identify_structure(payload: dict) -> dict[str, object]:
@@ -254,7 +315,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/recognize-image", response_model=RecognitionResponse)
     async def recognize_image(file: UploadFile = File(...)) -> RecognitionResponse:
-        if file.content_type not in settings.recognition.allowed_image_types:
+        if not _is_allowed_image_upload(file, settings.recognition.allowed_image_types):
             raise HTTPException(status_code=400, detail="Only png, jpeg, or webp screenshots are supported")
         data = await file.read()
         max_bytes = settings.recognition.max_upload_mb * 1024 * 1024
@@ -276,7 +337,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_id: str = Form("default"),
         learn: bool = Form(False),
     ) -> dict[str, object]:
-        if file.content_type not in settings.recognition.allowed_image_types:
+        if not _is_allowed_image_upload(file, settings.recognition.allowed_image_types):
             raise HTTPException(status_code=400, detail="Only png, jpeg, or webp images are supported")
         data = await file.read()
         max_bytes = settings.recognition.max_upload_mb * 1024 * 1024
@@ -291,7 +352,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         recognition = recognize_image_payload(data, settings.recognition.ocr_language)
         recognized_text = recognition.text.strip()
-        combined_text = "\n".join(part for part in [question.strip(), recognized_text] if part)
+        visual_matches = visual_index.match_bytes(data, limit=5)
+        visual_context = _visual_matches_to_context(visual_matches)
+        combined_text = "\n".join(part for part in [question.strip(), recognized_text, visual_context] if part)
         if not combined_text:
             combined_text = "客户上传了一张门窗/断桥铝/系统窗图片，请按图片结构分析。"
         messages = [MessageInput(id="image-1", sender="customer", text=combined_text)]
@@ -310,6 +373,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             question=question,
             recognized_text=recognized_text,
             matches=matches,
+            visual_matches=visual_matches,
         )
         interaction_store.append(
             source="api_vision_analyze",
@@ -319,11 +383,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             screenshot_path=upload_path,
             messages=messages,
             output=response,
-            metadata={"session_id": session_id, "filename": file.filename or ""},
+            metadata={
+                "session_id": session_id,
+                "filename": file.filename or "",
+                "visual_matches": ",".join(match.entry.id for match in visual_matches[:5]),
+            },
         )
         return {
             "analysis": response.model_dump(),
             "recognition": recognition.model_dump(),
+            "visual_matches": [match.to_dict() for match in visual_matches],
             "upload_path": str(upload_path),
             "knowledge_status": kb.status().model_dump(),
             "codex_handoff": codex_handoff,
