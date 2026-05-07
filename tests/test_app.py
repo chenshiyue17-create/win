@@ -345,3 +345,28 @@ def test_brand_structure_reply_is_customer_ready_not_raw_evidence() -> None:
     assert "知识库原文" not in reply
     assert "证据原文" not in reply
     assert "满天窗" not in reply
+
+
+def test_general_knowledge_reply_is_not_raw_comment_splice() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/analyze",
+        json={
+            "messages": [
+                {
+                    "id": "m1",
+                    "sender": "customer",
+                    "text": "这个价格有大玻璃，标准双内开结构，胶条隔热条要问什么？",
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    reply = response.json()["hints"][0]["suggested_reply"]
+    assert "双内开" in reply
+    assert "胶条" in reply
+    assert "隔热条" in reply
+    assert "参考知识库相似判断" not in reply
+    assert "满天窗" not in reply
+    assert "作者" not in reply
+    assert "赞 回复" not in reply

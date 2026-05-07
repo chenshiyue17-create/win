@@ -128,6 +128,44 @@ def _brand_structure_reply(match) -> str:
     )
 
 
+def _strip_source_noise(line: str) -> str:
+    cleaned = re.sub(r"满天窗\(帮看门窗结构\)\s*作者\s*", "", line)
+    cleaned = re.sub(r"门窗砍价官\s*作者\s*", "", cleaned)
+    cleaned = re.sub(r"\b20\d{2}-\d{2}-\d{2}[^。；，,]*?(赞|回复)?", "", cleaned)
+    cleaned = re.sub(r"\b\d{2}-\d{2}[^。；，,]*?(赞|回复)?", "", cleaned)
+    cleaned = re.sub(r"\s*(赞|回复)\s*$", "", cleaned)
+    cleaned = re.sub(r"参考知识库相似判断[:：]?", "", cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip(" -。")
+
+
+def _general_customer_reply(line: str) -> str:
+    clean = _strip_source_noise(line)
+    points: list[str] = []
+    if "双内开" in clean:
+        points.append("结构属于比较标准的双内开思路，基础结构本身问题不大")
+    if "大玻璃" in clean:
+        points.append("价格里可能包含大玻璃，承重、玻璃配置和安装边界要单独确认")
+    if "开扇" in clean:
+        points.append("先问清楚一共有几个开扇，开扇是否另算")
+    if "胶条" in clean or "隔热条" in clean:
+        points.append("胶条和隔热条品牌要让商家写清楚")
+    if "五金" in clean:
+        points.append("五金品牌、质保年限和售后范围要写进合同")
+    if "价格" in clean or "报价" in clean:
+        points.append("报价要拆开看是否包含安装、运费、吊装、玻璃增配和开扇")
+    if "没有啥问题" in clean or "没啥问题" in clean:
+        verdict = "这款可以继续往下核配置，不用只因为截面就直接否定。"
+    elif any(word in clean for word in ("不建议", "pass", "气密性会比较薄弱", "承重比较差")):
+        verdict = "这款不建议只看价格下单，结构和工艺风险要先问清楚。"
+    else:
+        verdict = "这款先按结构、配置和报价包含项综合判断，不要只看单价。"
+
+    if not points:
+        points.append(clean[:120])
+    detail = "；".join(points[:4])
+    return f"{verdict}重点看：{detail}。建议再补充五金、胶条、隔热条、玻璃配置、开扇数量和报价包含项后确认。"
+
+
 def build_reply(message: MessageInput, matches: list, warnings: list[str]) -> str:
     if warnings:
         return "这个点需要谨慎表达，不能做绝对化承诺。我先按客户户型、楼层、朝向、噪音源和预算来判断适合配置，再给可落地的建议。"
@@ -149,7 +187,7 @@ def build_reply(message: MessageInput, matches: list, warnings: list[str]) -> st
                 "参考同类评论案例：价格大概 799/平，开扇一般 1280 左右，重点要确认是否包含安装费、运费和玻璃增配。"
                 "另外这类案例里提到五金质保可能只有一年，建议让商家把五金品牌、质保年限、胶条/隔热条品牌和售后范围写进合同。"
             )
-        return "参考知识库相似判断：" + first[:180] + " 建议再补充五金、胶条、隔热条、玻璃配置和报价包含项后确认。"
+        return _general_customer_reply(first)
     if matches and matches[0].entry.reply_templates:
         return matches[0].entry.reply_templates[0]
     return f"收到，关于“{message.text[:28]}”，我建议先问清楚使用场景、楼层朝向、是否临街、洞口尺寸和预算，再给门窗配置。"
