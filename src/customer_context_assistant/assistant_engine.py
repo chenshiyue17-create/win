@@ -149,10 +149,16 @@ def _semantic_points_from_line(line: str) -> list[str]:
         points.append("主框腔体数量属于常规水平，先看壁厚和隔热条是否扎实")
     if "六腔体" in clean or "6腔体" in clean:
         points.append("主框腔体数量相对更足，但还要看壁厚和隔热条结构")
+    if "主框两个腔体" in clean:
+        points.append("主框两个腔体时，型材支撑和注胶空间要重点核实")
+    if "不能满注胶" in clean:
+        points.append("组角如果不能满注胶，长期气密和结构稳定性会打折")
     if "双内开" in clean:
         points.append("结构属于比较标准的双内开思路，基础结构本身问题不大")
-    if "大玻璃" in clean:
+    if "大玻璃" in clean or "超大玻璃" in clean:
         points.append("价格里可能包含大玻璃，承重、玻璃配置和安装边界要单独确认")
+    if "承重比较差" in clean or "沉重比较差" in clean:
+        points.append("大玻璃场景要重点确认承重和安全边界")
     if "开扇" in clean:
         points.append("先问清楚一共有几个开扇，开扇是否另算")
     if "副框" in clean:
@@ -189,6 +195,41 @@ def _general_customer_reply(line: str) -> str:
         points.append("先补清主框/副框/玻扇、壁厚、隔热条、胶条搭接和玻璃配置")
     detail = "；".join(points[:4])
     return f"{verdict}重点看：{detail}。建议再补充五金、胶条、隔热条、玻璃配置、开扇数量和报价包含项后确认。"
+
+
+def build_direct_visual_reply(author_replies: list[str], brand_clues: list[str] | None = None) -> str:
+    useful_replies = [
+        reply
+        for reply in author_replies
+        if len(_strip_source_noise(reply)) >= 24
+        and any(
+            word in reply
+            for word in (
+                "结构",
+                "主框",
+                "副框",
+                "玻扇",
+                "压线",
+                "隔热条",
+                "胶条",
+                "五金",
+                "价格",
+                "安装",
+                "开扇",
+                "不建议",
+                "可以选择",
+                "没有啥问题",
+            )
+        )
+    ]
+    if not useful_replies:
+        return ""
+    chosen = max(useful_replies, key=lambda item: len(_semantic_points_from_line(item)) * 100 + len(item))
+    reply = _general_customer_reply(chosen)
+    if brand_clues:
+        brand_text = "、".join(brand_clues[:3])
+        reply += f" 图库相似案例里有 {brand_text} 线索，但品牌仍以型材标识和合同为准。"
+    return reply
 
 
 def _knowledge_line_summary(line: str) -> str:

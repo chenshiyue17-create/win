@@ -10,7 +10,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from customer_context_assistant.assistant_engine import AssistantEngine
+from customer_context_assistant.assistant_engine import AssistantEngine, build_direct_visual_reply
 from customer_context_assistant.config import Settings, load_settings
 from customer_context_assistant.conversation_store import ConversationStore, infer_session_id_from_text
 from customer_context_assistant.github_archive import archive_status, export_archive
@@ -132,6 +132,25 @@ def _visual_matches_to_context(visual_matches: list) -> str:
             )
         )
     return "\n".join(lines)
+
+
+def _apply_direct_visual_reply(response: AnalyzeResponse, visual_matches: list) -> AnalyzeResponse:
+    if not response.hints or not visual_matches:
+        return response
+    top = visual_matches[0]
+    if top.score < 0.86 or not top.entry.author_replies:
+        return response
+    direct_reply = build_direct_visual_reply(top.entry.author_replies, top.entry.brand_clues)
+    if not direct_reply:
+        return response
+    hint = response.hints[0]
+    hint.suggested_reply = direct_reply
+    hint.interaction_analysis = (
+        f"图库高相似样本直接命中：{top.entry.title}，相似度 {top.score:.0%}。"
+        "已优先采用该样本绑定的真实回复并净化成客户可读话术；品牌只作为线索，不直接定论。 "
+        + hint.interaction_analysis
+    )
+    return response
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -367,6 +386,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 image_bytes=data,
             )
         )
+        response = _apply_direct_visual_reply(response, visual_matches)
         matches = response.hints[0].matched_entries if response.hints else []
         codex_handoff = _build_codex_handoff(
             image_path=upload_path,

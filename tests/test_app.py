@@ -1,9 +1,12 @@
 from fastapi.testclient import TestClient
 from io import BytesIO
 from PIL import Image
+from types import SimpleNamespace
 from uuid import uuid4
 
-from customer_context_assistant.app import create_app
+from customer_context_assistant.app import create_app, _apply_direct_visual_reply
+from customer_context_assistant.assistant_engine import build_direct_visual_reply
+from customer_context_assistant.models import AnalyzeResponse, Hint
 
 
 def test_health_and_analyze() -> None:
@@ -395,3 +398,53 @@ def test_analysis_summary_does_not_show_raw_comment_noise() -> None:
     assert "作者" not in combined
     assert "赞 回复" not in combined
     assert "湖北 赞" not in combined
+
+
+def test_direct_visual_reply_uses_matched_comment_before_brand_template() -> None:
+    author_replies = [
+        "满天窗(帮看门窗结构) 作者 新豪轩的内开窗做的很一般，我记得他主框两个腔体是不能满注胶的，超大玻璃的承重比较差，如果价格是799包含安装并且能参加85折的国补的话是可以选择的，不然就不如一些北方品牌的产品 2025-05-15浙江 1 回复",
+        "满天窗(帮看门窗结构) 作者 京港亚结构有吗？ 2025-05-15浙江 赞 回复",
+    ]
+
+    reply = build_direct_visual_reply(author_replies, ["新豪轩", "京港亚"])
+
+    assert "主框两个腔体" in reply
+    assert "不能满注胶" in reply or "满注胶" in reply
+    assert "大玻璃" in reply
+    assert "799" not in reply or "报价" in reply
+    assert "满天窗" not in reply
+    assert "作者" not in reply
+    assert "京港亚结构有吗" not in reply
+
+
+def test_high_score_visual_match_overrides_brand_structure_reply() -> None:
+    response = AnalyzeResponse(
+        hints=[
+            Hint(
+                message_id="image-1",
+                intent="窗型选择",
+                confidence=0.96,
+                summary="命中品牌结构",
+                interaction_analysis="品牌结构指纹命中：京港亚。",
+                suggested_reply="这张先别按品牌名下结论，要从截面结构看。它和知识库里“疑似 京港亚”的结构线索比较接近。",
+                matched_entries=[],
+            )
+        ]
+    )
+    visual_match = SimpleNamespace(
+        score=0.93,
+        entry=SimpleNamespace(
+            title="图库样本",
+            brand_clues=["新豪轩", "京港亚"],
+            author_replies=[
+                "满天窗(帮看门窗结构) 作者 新豪轩的内开窗做的很一般，我记得他主框两个腔体是不能满注胶的，超大玻璃的承重比较差，如果价格是799包含安装并且能参加85折的国补的话是可以选择的，不然就不如一些北方品牌的产品 2025-05-15浙江 1 回复"
+            ],
+        ),
+    )
+
+    updated = _apply_direct_visual_reply(response, [visual_match])
+    reply = updated.hints[0].suggested_reply
+
+    assert "疑似 京港亚" not in reply
+    assert "主框两个腔体" in reply
+    assert "图库高相似样本直接命中" in updated.hints[0].interaction_analysis
