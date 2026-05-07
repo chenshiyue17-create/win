@@ -131,39 +131,80 @@ def _brand_structure_reply(match) -> str:
 def _strip_source_noise(line: str) -> str:
     cleaned = re.sub(r"满天窗\(帮看门窗结构\)\s*作者\s*", "", line)
     cleaned = re.sub(r"门窗砍价官\s*作者\s*", "", cleaned)
+    cleaned = re.sub(r"\s*/\s*-\s*", "。", cleaned)
     cleaned = re.sub(r"\b20\d{2}-\d{2}-\d{2}[^。；，,]*?(赞|回复)?", "", cleaned)
     cleaned = re.sub(r"\b\d{2}-\d{2}[^。；，,]*?(赞|回复)?", "", cleaned)
-    cleaned = re.sub(r"\s*(赞|回复)\s*$", "", cleaned)
+    cleaned = re.sub(r"\b\d{1,2}小时前[^。；，,]*?(赞|回复)?", "", cleaned)
+    cleaned = re.sub(r"(湖北|浙江|广东|湖南|上海|河南|广西|重庆|北京|江苏|四川|山东|福建|安徽)\s*(赞|回复)?", "", cleaned)
+    cleaned = re.sub(r"\s*(赞|回复)\s*", " ", cleaned)
+    cleaned = re.sub(r"(满天窗\(帮看门窗结构\)|门窗砍价官)\s*", "", cleaned)
     cleaned = re.sub(r"参考知识库相似判断[:：]?", "", cleaned)
     return re.sub(r"\s+", " ", cleaned).strip(" -。")
 
 
-def _general_customer_reply(line: str) -> str:
+def _semantic_points_from_line(line: str) -> list[str]:
     clean = _strip_source_noise(line)
     points: list[str] = []
+    if "四腔体" in clean or "四腔" in clean:
+        points.append("主框腔体数量属于常规水平，先看壁厚和隔热条是否扎实")
+    if "六腔体" in clean or "6腔体" in clean:
+        points.append("主框腔体数量相对更足，但还要看壁厚和隔热条结构")
     if "双内开" in clean:
         points.append("结构属于比较标准的双内开思路，基础结构本身问题不大")
     if "大玻璃" in clean:
         points.append("价格里可能包含大玻璃，承重、玻璃配置和安装边界要单独确认")
     if "开扇" in clean:
         points.append("先问清楚一共有几个开扇，开扇是否另算")
+    if "副框" in clean:
+        if "安全性更好" in clean or "套在里面" in clean or "垫块" in clean:
+            points.append("副框做法要重点看承重和固定方式，带垫块或套入更稳的结构更值得优先")
+        else:
+            points.append("副框位置要看承重、固定和安装收口，不能只看主框")
     if "胶条" in clean or "隔热条" in clean:
         points.append("胶条和隔热条品牌要让商家写清楚")
     if "五金" in clean:
         points.append("五金品牌、质保年限和售后范围要写进合同")
-    if "价格" in clean or "报价" in clean:
+    if "价格" in clean or "报价" in clean or "630" in clean:
         points.append("报价要拆开看是否包含安装、运费、吊装、玻璃增配和开扇")
-    if "没有啥问题" in clean or "没啥问题" in clean:
-        verdict = "这款可以继续往下核配置，不用只因为截面就直接否定。"
-    elif any(word in clean for word in ("不建议", "pass", "气密性会比较薄弱", "承重比较差")):
-        verdict = "这款不建议只看价格下单，结构和工艺风险要先问清楚。"
-    else:
-        verdict = "这款先按结构、配置和报价包含项综合判断，不要只看单价。"
+    if "厚度差不多" in clean or "厚度差不多" in clean:
+        points.append("两款厚度差不多时，优先比较副框承重、胶条搭接和隔热条结构")
+    return points
 
+
+def _general_verdict(line: str) -> str:
+    clean = _strip_source_noise(line)
+    if "选右边" in clean:
+        return "这两款对比时更偏向右边那款，但还要把配置和报价边界问完整。"
+    if "没有啥问题" in clean or "没啥问题" in clean:
+        return "这款可以继续往下核配置，不用只因为截面就直接否定。"
+    if any(word in clean for word in ("不建议", "pass", "气密性会比较薄弱", "承重比较差")):
+        return "这款不建议只看价格下单，结构和工艺风险要先问清楚。"
+    return "这款先按结构、配置和报价包含项综合判断，不要只看单价。"
+
+
+def _general_customer_reply(line: str) -> str:
+    verdict = _general_verdict(line)
+    points = _semantic_points_from_line(line)
     if not points:
-        points.append(clean[:120])
+        points.append("先补清主框/副框/玻扇、壁厚、隔热条、胶条搭接和玻璃配置")
     detail = "；".join(points[:4])
     return f"{verdict}重点看：{detail}。建议再补充五金、胶条、隔热条、玻璃配置、开扇数量和报价包含项后确认。"
+
+
+def _knowledge_line_summary(line: str) -> str:
+    verdict = _general_verdict(line)
+    points = _semantic_points_from_line(line)
+    if points:
+        return verdict + " " + "；".join(points[:3]) + "。"
+    return verdict
+
+
+def _display_knowledge_title(title: str) -> str:
+    clean = _strip_source_noise(title)
+    if title.startswith(("作者回复:", "客户问答:", "评论案例:")) or "作者" in title:
+        summary = _knowledge_line_summary(clean)
+        return "相似评论结构判断：" + summary[:80]
+    return clean[:120] or "相似知识卡"
 
 
 def build_reply(message: MessageInput, matches: list, warnings: list[str]) -> str:
@@ -211,7 +252,7 @@ def build_interaction_analysis(message: MessageInput, context: list[MessageInput
     else:
         points.append("先识别客户真实动机：省钱、怕踩坑、想比较、还是准备下单，再决定追问深度。")
     if matches:
-        points.append(f"可引用知识库：{matches[0].entry.title}。")
+        points.append(f"可引用知识库：{_display_knowledge_title(matches[0].entry.title)}。")
     brand_structure_matches = [match for match in matches[:5] if match.entry.id.startswith("menchuang-brand-structure-")]
     if brand_structure_matches:
         brand_lines = []
@@ -224,7 +265,7 @@ def build_interaction_analysis(message: MessageInput, context: list[MessageInput
             points.append("品牌结构指纹命中：" + " / ".join(brand_lines) + "。")
     relevant_lines = _relevant_knowledge_lines(message.text, matches, limit=3)
     if relevant_lines:
-        points.append("命中的具体判断：" + " / ".join(relevant_lines))
+        points.append("命中的具体判断提要：" + " / ".join(_knowledge_line_summary(line) for line in relevant_lines))
     if message.text and any(word in message.text for word in ("图片", "截面", "样角", "结构", "品牌", "价格")):
         points.append("本地工具不调用外部识图 API；先基于图片保存路径、OCR 文本和知识命中生成初判，深度视觉结构判断交给 Codex。")
     return " ".join(points)

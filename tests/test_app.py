@@ -370,3 +370,28 @@ def test_general_knowledge_reply_is_not_raw_comment_splice() -> None:
     assert "满天窗" not in reply
     assert "作者" not in reply
     assert "赞 回复" not in reply
+
+
+def test_analysis_summary_does_not_show_raw_comment_noise() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/analyze",
+        json={
+            "messages": [
+                {
+                    "id": "m1",
+                    "sender": "customer",
+                    "text": "两款主框都是四腔体，左边卡面宽一点，右边副框套里面安全性更好，选哪个？",
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    hint = response.json()["hints"][0]
+    combined = hint["suggested_reply"] + hint["interaction_analysis"]
+    assert "右边" in hint["suggested_reply"] or "副框" in hint["suggested_reply"]
+    assert "满天窗" not in combined
+    assert "门窗砍价官" not in combined
+    assert "作者" not in combined
+    assert "赞 回复" not in combined
+    assert "湖北 赞" not in combined
