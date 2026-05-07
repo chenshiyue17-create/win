@@ -274,6 +274,7 @@ def test_analyze_uses_specific_structural_reply_from_distilled_knowledge() -> No
     assert "讴铂" in hint["suggested_reply"]
     assert "内置铰链" in hint["suggested_reply"]
     assert "命中的具体判断" in hint["interaction_analysis"]
+    assert "知识库原文" not in hint["suggested_reply"]
 
 
 def test_analyze_uses_specific_brand_price_warranty_reply_from_comments() -> None:
@@ -317,4 +318,30 @@ def test_analyze_answers_brand_from_structure_fingerprint() -> None:
     assert "截面结构" in hint["suggested_reply"] or "结构看" in hint["suggested_reply"]
     assert "新豪轩" in hint["suggested_reply"]
     assert "疑似" in hint["suggested_reply"]
+    assert "知识库原文" not in hint["suggested_reply"]
+    assert "证据原文" not in hint["suggested_reply"]
     assert "品牌结构指纹命中" in hint["interaction_analysis"]
+
+
+def test_brand_structure_reply_is_customer_ready_not_raw_evidence() -> None:
+    client = TestClient(create_app())
+    response = client.post(
+        "/api/analyze",
+        json={
+            "messages": [
+                {
+                    "id": "m1",
+                    "sender": "customer",
+                    "text": "这款玻扇只有两个腔体，压线是不可拆卸的，不会注胶也不会刷端面胶，45度拼接缝气密弱，像什么品牌？",
+                }
+            ]
+        },
+    )
+    assert response.status_code == 200
+    reply = response.json()["hints"][0]["suggested_reply"]
+    assert "这张先别按品牌名下结论" in reply
+    assert "玻扇只有两个腔体" in reply
+    assert "压线不可拆" in reply
+    assert "知识库原文" not in reply
+    assert "证据原文" not in reply
+    assert "满天窗" not in reply

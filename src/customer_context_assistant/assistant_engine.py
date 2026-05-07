@@ -88,19 +88,43 @@ def _field_from_content(content: str, label: str) -> str:
     return ""
 
 
+def _human_structure_features(features: str) -> list[str]:
+    raw = [item.strip() for item in re.split(r"[、,，]", features) if item.strip()]
+    normalized: list[str] = []
+    groups = (
+        ("玻扇只有两个腔体", ("玻扇只有两个腔体", "玻扇两腔体")),
+        ("压线不可拆", ("压线是不可拆卸", "压线不可拆卸", "不可拆卸")),
+        ("玻璃安装时难做完整注胶/端面胶", ("不会注胶", "不会刷端面胶", "端面胶", "45度拼接缝")),
+        ("拼角位置气密性偏弱", ("气密", "45度拼接缝")),
+        ("主框两个腔体", ("主框两个腔体",)),
+        ("不能满注胶", ("不能满注胶",)),
+        ("大玻璃承重风险更高", ("超大玻璃", "承重比较差")),
+        ("内置铰链", ("内置铰链",)),
+        ("外小冷腔/内大暖腔", ("外小冷腔", "内大暖腔",)),
+    )
+    for label, aliases in groups:
+        if any(alias in raw for alias in aliases) and label not in normalized:
+            normalized.append(label)
+    for item in raw:
+        if item not in {alias for _, aliases in groups for alias in aliases} and item not in normalized:
+            normalized.append(item)
+    return normalized[:5]
+
+
 def _brand_structure_reply(match) -> str:
     content = match.entry.content
     brand = _field_from_content(content, "品牌结构指纹") or "某品牌"
     series = _field_from_content(content, "系列/型号线索") or "未明确到系列"
     features = _field_from_content(content, "截面结构特征")
-    evidence = _field_from_content(content, "证据原文")
-    evidence_hint = f"知识库原文里对应说法是：{evidence[:120]}。" if evidence else ""
+    human_features = _human_structure_features(features)
+    feature_text = "、".join(human_features) if human_features else "这几个截面细节"
+    series_text = f"{brand}{series}" if series and series != "未明确到系列" else brand
+    verdict = "不太建议优先选" if any(word in features for word in ("玻扇只有两个腔体", "不可拆卸", "不会注胶", "端面胶", "承重比较差")) else "可以继续对比配置"
     return (
-        f"先按截面结构看，不直接按品牌名下结论；这张图如果能看到 {features} 这些点同时成立，"
-        f"知识库里对应的是“疑似/像 {brand}”的结构线索，系列线索是 {series}。"
-        f"{evidence_hint}"
-        "建议继续让商家补型材标识、报价单系列名、五金/胶条/隔热条品牌和开扇/安装包含项；"
-        "品牌只能写疑似，最终以实物标识和合同配置为准。"
+        f"这张先别按品牌名下结论，要从截面结构看。"
+        f"如果图上确实能看到{feature_text}，那这类结构的短板主要在隔热、气密和后期玻璃安装工艺上，{verdict}。"
+        f"它和知识库里“疑似 {series_text}”的结构线索比较接近，但只能说像，不能直接认定品牌。"
+        "建议让商家补报价单系列名、型材喷码/标识、五金/胶条/隔热条品牌，以及开扇、安装、运费和质保是否写进合同。"
     )
 
 
